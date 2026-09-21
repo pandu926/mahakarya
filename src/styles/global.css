@@ -1,0 +1,54 @@
+@import './experience-shell.css';
+
+:root {
+  --mk-bg-void: #071018;
+  --mk-bg-deep: #0a131b;
+  --mk-bg-panel: #101a22;
+  --mk-bg-panel-2: #141f28;
+  --mk-surface-stone: #242b30;
+  --mk-surface-steel: #5f6971;
+  --mk-ink-primary: #f3efe8;
+  --mk-ink-secondary: #b8c0c5;
+  --mk-ink-muted: #7f8b93;
+  --mk-gold: #e7b86b;
+  --mk-gold-bright: #ffd99b;
+  --mk-gold-dim: #9f7745;
+  --mk-cool-light: #b7d5ea;
+  --mk-line-dim: rgba(223, 232, 238, .18);
+  --mk-line-soft: rgba(255, 255, 255, .08);
+  --mk-overlay: rgba(2, 7, 11, .78);
+  --mk-safe-x: clamp(16px, 3vw, 48px);
+  --mk-topbar-h: 56px;
+  --mk-ease-micro: cubic-bezier(.2, .8, .2, 1);
+  --mk-ease-large: cubic-bezier(.16, 1, .3, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { background: var(--mk-bg-void); color: var(--mk-ink-primary); min-height: 100%; }
+
+body, #root { background: var(--mk-bg-void); color: var(--mk-ink-primary); margin: 0; min-height: 100%; }
+
+.mk-app-shell { background: var(--mk-bg-void); isolation: isolate; min-height: 100svh; position: relative; }
+.webgl-stage, .webgl-stage--fallback { background-color: var(--mk-bg-void) !important; }
+
+button, a { -webkit-tap-highlight-color: transparent; }
+
+button:focus-visible, a:focus-visible { outline: 2px solid var(--mk-gold-bright); outline-offset: 4px; }
+
+::selection { background: var(--mk-gold); color: var(--mk-bg-void); }
+
+.mk-sr-only {
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+.mk-overlay-is-open { overflow: hidden; }
