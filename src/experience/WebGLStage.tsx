@@ -1,6 +1,6 @@
-import { Component, useEffect, useMemo, useRef, useState } from 'react'
+import { Component, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, ErrorInfo, ReactNode } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { chapterConfigs } from '../chapters/config'
 import { journeyRuntime, getAdaptiveQuality, getQualityProfile } from './runtime'
@@ -82,6 +82,16 @@ function RuntimeBridge({ reducedMotion }: Pick<WebGLStageProps, 'reducedMotion'>
   return null
 }
 
+function ContextGuard({ onLost }: { onLost: () => void }) {
+  const canvas = useThree(state => state.gl.domElement)
+  useEffect(() => {
+    const handleLost = (event: Event) => { event.preventDefault(); onLost() }
+    canvas.addEventListener('webglcontextlost', handleLost)
+    return () => canvas.removeEventListener('webglcontextlost', handleLost)
+  }, [canvas, onLost])
+  return null
+}
+
 function FirstFrame({ onReady }: { onReady?: () => void }) {
   const frames = useRef(0)
   useFrame(({ gl, scene }) => {
@@ -141,6 +151,11 @@ export function WebGLStage({
     return getAdaptiveQuality(typeof window === 'undefined' ? 1280 : window.innerWidth, typeof navigator === 'undefined' ? {} : navigator)
   })
   const safeChapters = useMemo<readonly ChapterConfig[]>(() => chapters.length >= 6 ? chapters : chapterConfigs, [chapters])
+  const handleContextLost = useCallback(() => {
+    setStatus('fallback')
+    availability.current?.(false)
+    onReady?.()
+  }, [onReady])
 
   useEffect(() => {
     if (qualityTier !== 'auto') { setResolvedQuality(qualityTier); return }
@@ -204,6 +219,7 @@ export function WebGLStage({
           style={{ width: '100%', height: '100%', display: 'block' }}
         >
           <World chapters={safeChapters} qualityTier={resolvedQuality} reducedMotion={reducedMotion} />
+          <ContextGuard onLost={handleContextLost} />
           <FirstFrame onReady={onReady} />
         </Canvas>
       </WebGLErrorBoundary>

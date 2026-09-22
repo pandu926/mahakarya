@@ -1,4 +1,4 @@
-/* global window, document, innerHeight, innerWidth, HTMLCanvasElement */
+/* global window, document, innerHeight, innerWidth, HTMLCanvasElement, Event */
 import assert from 'node:assert/strict'
 import process from 'node:process'
 import console from 'node:console'
