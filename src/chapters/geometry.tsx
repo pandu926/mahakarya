@@ -5,7 +5,7 @@ import { createSeededRandom } from '../experience/runtime'
 import { useStoneTexture } from './StoneTexture'
 
 export function rockGeometry(seed: number, detail = 5) {
-  const base = new THREE.IcosahedronGeometry(1, Math.max(8, detail))
+  const base = new THREE.IcosahedronGeometry(1, Math.max(0, detail))
   base.deleteAttribute('normal')
   base.deleteAttribute('uv')
   const geometry = mergeVertices(base)
