@@ -1,81 +1,60 @@
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import type { ChapterWorldProps } from '../experience/types'
-import { getLocalProgress, getSectionWeight, journeyRuntime } from '../experience/runtime'
-import { COLORS } from './shared'
+import { createSeededRandom, getLocalProgress, journeyRuntime } from '../experience/runtime'
+import { Human, Instances, StoneMaterial, type InstanceSpec } from './geometry'
 
-export function PreludeWorld({ chapter, position, reducedMotion = false }: ChapterWorldProps) {
-  const root = useRef<THREE.Group>(null)
-  const ring = useRef<THREE.Mesh>(null)
-  const seam = useRef<THREE.MeshBasicMaterial>(null)
-  const floorGlow = useRef<THREE.MeshBasicMaterial>(null)
-  const local = getLocalProgress(journeyRuntime.progress, chapter.range)
-
-  useFrame((_, delta) => {
-    const node = root.current
-    if (!node) return
-    const progress = journeyRuntime.progress
-    const weight = getSectionWeight(progress, chapter.range)
-    if (weight < 0.01) return
-    const chapterProgress = getLocalProgress(progress, chapter.range)
-    const time = reducedMotion ? 0 : performance.now() * 0.001
-    node.position.y = position[1] + (reducedMotion ? 0 : Math.sin(time * 0.34) * 0.015) * weight
-    if (ring.current && !reducedMotion) ring.current.rotation.z += delta * 0.035 * (0.35 + weight)
-    if (seam.current) seam.current.opacity = 0.18 + weight * 0.7 - chapterProgress * 0.28
-    if (floorGlow.current) floorGlow.current.opacity = 0.12 + weight * 0.26
+export function PreludeWorld({ position, chapter, reducedMotion = false }: ChapterWorldProps) {
+  const energy = useRef<THREE.ShaderMaterial>(null)
+  const ring = useRef<THREE.Group>(null)
+  const slab = useMemo(() => {
+    const g = new THREE.BoxGeometry(1, 1, 1, 5, 18, 3)
+    const p = g.attributes.position
+    for (let i = 0; i < p.count; i++) {
+      const x = p.getX(i), y = p.getY(i), z = p.getZ(i)
+      p.setZ(i, z + Math.sin(x * 27 + y * 31) * .025)
+    }
+    g.computeVertexNormals()
+    return g
+  }, [])
+  const plates = useMemo<InstanceSpec[]>(() => Array.from({ length: 12 }, (_, i) => ({ position: [(i < 6 ? -1 : 1) * 2.12, .85 + (i % 6) * 1.85, .51], scale: [1.84, 1.78, .08], color: i % 3 === 0 ? '#30373a' : '#1d252c' })), [])
+  const uniforms = useMemo(() => ({ uTime: { value: 0 }, uStrength: { value: 1 } }), [])
+  const stardust = useMemo(() => {
+    const random = createSeededRandom(1107)
+    const points = new Float32Array(900 * 3)
+    for (let i = 0; i < 900; i++) {
+      const angle = random() * Math.PI * 2
+      const radius = .3 + Math.pow(random(), .4) * .7
+      points[i * 3] = Math.cos(angle) * radius
+      points[i * 3 + 1] = 5.7 + Math.sin(angle) * radius * 5
+      points[i * 3 + 2] = .1 + random() * .03
+    }
+    return new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(points, 3))
+  }, [])
+  useEffect(() => () => { slab.dispose(); stardust.dispose() }, [slab, stardust])
+  useFrame(({ clock }) => {
+    const local = getLocalProgress(journeyRuntime.progress, chapter.range)
+    if (energy.current) {
+      uniforms.uTime.value = reducedMotion ? 0 : clock.elapsedTime
+      uniforms.uStrength.value = 1 - local * .55
+    }
+    if (ring.current) ring.current.rotation.z = reducedMotion ? 0 : local * Math.PI / 15
   })
-
-  const floorGeometry = useMemo(() => new THREE.PlaneGeometry(14, 10), [])
-
-  return (
-    <group ref={root} position={[position[0], position[1], position[2]]} name="PreludePortal">
-      <mesh position={[-2.05, 4.75, 0]} castShadow receiveShadow>
-        <boxGeometry args={[2.1, 9.5, 0.8]} />
-        <meshStandardMaterial color={COLORS.basalt} roughness={0.9} metalness={0.08} />
-      </mesh>
-      <mesh position={[2.05, 4.75, 0]} castShadow receiveShadow>
-        <boxGeometry args={[2.1, 9.5, 0.8]} />
-        <meshStandardMaterial color={COLORS.basalt} roughness={0.9} metalness={0.08} />
-      </mesh>
-      <mesh position={[0, 9.25, 0]} castShadow>
-        <boxGeometry args={[6.2, 0.65, 0.9]} />
-        <meshStandardMaterial color={COLORS.stone} roughness={0.82} metalness={0.12} />
-      </mesh>
-      <mesh position={[0, 4.25, 0.47]}>
-        <planeGeometry args={[0.16, 8.1]} />
-        <meshBasicMaterial ref={seam} color={COLORS.ivory} transparent opacity={0.8} blending={THREE.AdditiveBlending} depthWrite={false} />
-      </mesh>
-      <mesh ref={ring} position={[0, 4.25, 0.35]} rotation={[0, 0, 0]} scale={[1, 1.85, 1]}>
-        <torusGeometry args={[2.05, 0.025, 8, 72]} />
-        <meshBasicMaterial color={COLORS.gold} transparent opacity={0.32} blending={THREE.AdditiveBlending} depthWrite={false} />
-      </mesh>
-      <mesh position={[0, 0.32, 1.25]}>
-        <capsuleGeometry args={[0.085, 0.33, 3, 8]} />
-        <meshBasicMaterial color="#050b0f" />
-      </mesh>
-      <mesh position={[0, 0.7, 1.25]}>
-        <sphereGeometry args={[0.095, 8, 6]} />
-        <meshBasicMaterial color="#050b0f" />
-      </mesh>
-      <mesh geometry={floorGeometry} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.06, 0.4]} receiveShadow>
-        <meshStandardMaterial color="#09151c" roughness={0.84} metalness={0.22} />
-      </mesh>
-      <mesh position={[0, 0.01, 1.3]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[3.6, 5.5]} />
-        <meshBasicMaterial ref={floorGlow} color={COLORS.goldDark} transparent opacity={0.2} blending={THREE.AdditiveBlending} depthWrite={false} />
-      </mesh>
-      <pointLight color={COLORS.gold} intensity={0.55 + local * 0.35} distance={14} position={[0, 4.5, 2.4]} />
+  return <group position={[...position]} name="PreludePortal">
+    <mesh geometry={slab} position={[-2.1, 5.75, 0]} scale={[2.1, 11.5, 1]}><StoneMaterial color="#343b40" roughness={.82} metalness={.04} /></mesh>
+    <mesh geometry={slab} position={[2.1, 6.1, 0]} scale={[2.1, 12.2, 1]}><StoneMaterial color="#2b343b" roughness={.84} metalness={.04} /></mesh>
+    <Instances geometry={slab} items={plates} stone />
+    <mesh position={[0, 5.7, -.12]}><planeGeometry args={[2.12, 11.4]} /><meshBasicMaterial color="#111d29" /></mesh>
+    <points geometry={stardust}><pointsMaterial color="#c7dceb" size={.015} transparent opacity={.7} depthWrite={false} /></points>
+    <group ref={ring} position={[0, 5.7, .09]}>
+      {[1.05, 1.13, 1.32, 1.7, 1.91, 2.02].map((r, i) => <mesh key={r} scale={[.5, 1.9, 1]} rotation={[0, 0, i * .035]}><torusGeometry args={[r, i === 2 ? .013 : .005, 5, 100]} /><meshBasicMaterial color={i % 2 ? '#aac7dc' : '#e7b86b'} transparent opacity={.22 + i * .035} /></mesh>)}
     </group>
-  )
-}
-
-export const chapterConfig = {
-  id: 'prelude' as const,
-  number: '01',
-  label: 'Prelude',
-  title: 'A Journey in Motion',
-  range: [0, 0.155] as const,
-  anchor: 0,
-  landmark: 'portal',
+    <mesh position={[0, 5.7, .17]}>
+      <planeGeometry args={[1.05, 11.4]} />
+      <shaderMaterial ref={energy} transparent depthWrite={false} blending={THREE.AdditiveBlending} uniforms={uniforms} vertexShader="varying vec2 vUv; void main(){vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}" fragmentShader="varying vec2 vUv; uniform float uTime; uniform float uStrength; void main(){float d=abs(vUv.x-.5); float core=exp(-d*42.); float halo=exp(-d*8.)*.36; float flicker=.95+.05*sin(vUv.y*26.-uTime*.7); vec3 c=mix(vec3(1.,.58,.19),vec3(1.,.98,.88),core); gl_FragColor=vec4(c,(core+halo)*uStrength*flicker);}" />
+    </mesh>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -.03, 5]}><planeGeometry args={[4.5, 10]} /><shaderMaterial transparent depthWrite={false} uniforms={uniforms} vertexShader="varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}" fragmentShader="varying vec2 vUv; uniform float uTime; void main(){float ripple=sin(vUv.y*340.+sin(vUv.x*53.))* .04; float d=abs(vUv.x-.5+ripple);float light=exp(-d*23.);float fade=pow(vUv.y,1.4);gl_FragColor=vec4(1.,.85,.62,light*fade*.6);}" /></mesh>
+    <Human position={[.1, 0, 2.4]} scale={1.65} />
+  </group>
 }

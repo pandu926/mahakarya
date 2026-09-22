@@ -3,52 +3,45 @@ import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { journeyRuntime } from './runtime'
 
-const CAMERA_POINTS = [
-  [-8, 3.4, 12],
-  [4, 3.1, 10],
-  [22, 4.2, 11],
-  [43, 3.6, 10],
-  [67, 4.5, 12],
-  [92, 3.2, 11],
-  [116, 4.8, 13],
-] as const
+const STOPS = [0, .0775, .2275, .3875, .5575, .73, .895, 1]
+const CAMERA_POINTS = [[7, 6.5, 28], [3, 6, 25], [15, 6.5, 22], [37, 6, 23], [61, 7, 25], [85, 5.8, 23], [111, 6.5, 25], [114, 7.3, 26]] as const
+const TARGET_POINTS = [[14, 4.5, 0], [5, 4.5, 0], [16, 3.3, 0], [38, 3.5, 0], [62, 3.7, 0], [86, 3.2, 0], [112, 3.8, 0], [114, 4.2, -1]] as const
 
-const TARGET_POINTS = [
-  [0, 2.4, 0],
-  [22, 2.8, 0],
-  [44, 2.4, 0],
-  [68, 2.6, 0],
-  [92, 2.2, 0],
-  [120, 3, 0],
-] as const
-
-export function CameraRig({ reducedMotion = false }: { reducedMotion?: boolean }) {
-  const { camera } = useThree()
-  const cameraCurve = useMemo(() => new THREE.CatmullRomCurve3(CAMERA_POINTS.map((point) => new THREE.Vector3(...point)), false, 'catmullrom', 0.42), [])
-  const targetCurve = useMemo(() => new THREE.CatmullRomCurve3(TARGET_POINTS.map((point) => new THREE.Vector3(...point)), false, 'catmullrom', 0.42), [])
-  const cameraPosition = useMemo(() => new THREE.Vector3(), [])
-  const targetPosition = useMemo(() => new THREE.Vector3(), [])
-  const look = useMemo(() => new THREE.Vector3(), [])
-  const currentProgress = useMemo(() => ({ value: journeyRuntime.progress }), [])
-
-  useFrame((_, delta) => {
-    const targetProgress = journeyRuntime.progress
-    const factor = reducedMotion ? 1 : 1 - Math.exp(-delta * (journeyRuntime.velocity ? 8.5 : 6.5))
-    currentProgress.value = THREE.MathUtils.lerp(currentProgress.value, targetProgress, factor)
-    cameraCurve.getPointAt(currentProgress.value, cameraPosition)
-    targetCurve.getPointAt(currentProgress.value, targetPosition)
-    const pointerX = reducedMotion ? 0 : journeyRuntime.pointerX
-    const pointerY = reducedMotion ? 0 : journeyRuntime.pointerY
-    cameraPosition.x += pointerX * 0.16
-    cameraPosition.y += pointerY * -0.1
-    targetPosition.x += pointerX * 0.6
-    targetPosition.y += pointerY * -0.26
-    camera.position.lerp(cameraPosition, reducedMotion ? 1 : 1 - Math.exp(-delta * 7.5))
-    look.lerp(targetPosition, reducedMotion ? 1 : 1 - Math.exp(-delta * 6.5))
-    camera.lookAt(look)
-  })
-
-  return null
+function splinePosition(progress: number) {
+  const i = Math.max(0, Math.min(STOPS.length - 2, STOPS.findIndex((p) => p > progress) - 1))
+  if (progress >= 1) return 1
+  return (i + (progress - STOPS[i]) / (STOPS[i + 1] - STOPS[i])) / (STOPS.length - 1)
 }
 
+export function CameraRig({ reducedMotion = false }: { reducedMotion?: boolean }) {
+  const { camera, size } = useThree()
+  const curves = useMemo(() => ({
+    camera: new THREE.CatmullRomCurve3(CAMERA_POINTS.map(p => new THREE.Vector3(...p)), false, 'catmullrom', .3),
+    target: new THREE.CatmullRomCurve3(TARGET_POINTS.map(p => new THREE.Vector3(...p)), false, 'catmullrom', .3),
+  }), [])
+  const temporary = useMemo(() => ({ camera: new THREE.Vector3(), target: new THREE.Vector3(), look: new THREE.Vector3(...TARGET_POINTS[0]), initialized: false }), [])
+  useFrame((_, delta) => {
+    const p = splinePosition(journeyRuntime.progress)
+    curves.camera.getPoint(p, temporary.camera)
+    curves.target.getPoint(p, temporary.target)
+    if (size.width < 768) {
+      const anchors = [0, 0, 22, 44, 68, 92, 118, 118]
+      const interval = p * (anchors.length - 1)
+      const i = Math.min(anchors.length - 2, Math.floor(interval))
+      const x = THREE.MathUtils.lerp(anchors[i], anchors[i + 1], interval - i)
+      temporary.camera.set(x - 2, 7, 34)
+      temporary.target.set(x, 1, 0)
+    }
+    if (!reducedMotion) {
+      temporary.camera.x += journeyRuntime.pointerX * .16
+      temporary.camera.y -= journeyRuntime.pointerY * .1
+    }
+    const factor = reducedMotion || !temporary.initialized ? 1 : 1 - Math.exp(-Math.min(delta, .05) * 7.5)
+    camera.position.lerp(temporary.camera, factor)
+    temporary.look.lerp(temporary.target, factor)
+    camera.lookAt(temporary.look)
+    temporary.initialized = true
+  })
+  return null
+}
 export { CAMERA_POINTS, TARGET_POINTS }

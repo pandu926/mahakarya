@@ -1,7 +1,6 @@
 import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
-import { CHAPTER_POSITIONS } from '../chapters/config'
 import { journeyRuntime } from './runtime'
 
 const TRAIL_VERTEX = `
@@ -18,10 +17,10 @@ const TRAIL_FRAGMENT = `
   uniform float uTime;
   uniform float uOpacity;
   void main() {
-    float reveal = 1.0 - smoothstep(uProgress - 0.014, uProgress + 0.014, vAlong);
+    float reveal = .2 + .8 * (1.0 - smoothstep(uProgress + .08, uProgress + .12, vAlong));
     float leading = 1.0 + 0.55 * exp(-abs(vAlong - uProgress) * 80.0);
     float pulse = 0.9 + 0.1 * sin(uTime * 2.0 + vAlong * 18.0);
-    gl_FragColor = vec4(0.91, 0.64, 0.29, reveal * uOpacity * leading * pulse);
+    gl_FragColor = vec4(1.0, 0.82, 0.52, reveal * uOpacity * leading * pulse);
   }
 `
 
@@ -29,7 +28,7 @@ export function JourneyTrail({ reducedMotion = false }: { reducedMotion?: boolea
   const core = useRef<THREE.ShaderMaterial>(null)
   const halo = useRef<THREE.ShaderMaterial>(null)
   const curve = useMemo(() => new THREE.CatmullRomCurve3(
-    CHAPTER_POSITIONS.map((point, index) => new THREE.Vector3(point[0], 0.18 + (index % 2) * 0.06, index === 0 ? 1.1 : 0)),
+    [[-10,.12,13],[-2,.12,6],[0,.14,2],[7,.18,4],[17,.3,3],[21,1.1,2],[25,.5,1],[34,.2,4],[44,.2,4],[54,.3,2],[68,.3,4],[80,.22,3],[92,.2,4],[104,.22,3],[118,.2,1],[131,.2,-8]].map(p => new THREE.Vector3(...p)),
     false,
     'catmullrom',
     0.42,
@@ -52,7 +51,7 @@ export function JourneyTrail({ reducedMotion = false }: { reducedMotion?: boolea
     uniforms.uProgress.value = journeyRuntime.progress
     uniforms.uTime.value = time
     if (core.current) core.current.uniforms.uOpacity.value = 0.72 + (journeyRuntime.velocity === 0 ? 0 : Math.min(Math.abs(journeyRuntime.velocity) * 0.16, 0.18))
-    if (halo.current) halo.current.uniforms.uOpacity.value = 0.1 + Math.min(Math.abs(journeyRuntime.velocity) * 0.05, 0.08)
+    if (halo.current) halo.current.uniforms.uOpacity.value = 0.22 + Math.min(Math.abs(journeyRuntime.velocity) * 0.05, 0.08)
   })
 
   return (

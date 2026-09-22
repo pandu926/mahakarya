@@ -35,6 +35,7 @@ export interface QualityProfile {
 export type QualityConfig = QualityProfile
 
 export interface WebGLStageProps {
+  activeChapter?: ChapterConfig['id']
   progress?: number
   velocity?: number
   reducedMotion?: boolean
@@ -43,5 +44,6 @@ export interface WebGLStageProps {
   className?: string
   style?: CSSProperties
   onAvailabilityChange?: (available: boolean) => void
+  onReady?: () => void
   fallback?: ReactNode
 }

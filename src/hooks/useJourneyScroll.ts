@@ -15,7 +15,7 @@ interface JourneyScrollOptions {
 interface JourneyScrollApi {
   progress: number
   velocity: number
-  goToChapter: (id: ChapterId) => void
+  goToChapter: (id: ChapterId, immediate?: boolean) => void
   lenisRef: React.MutableRefObject<Lenis | null>
 }
 
@@ -31,6 +31,28 @@ export function useJourneyScroll({ reducedMotion, chapters }: JourneyScrollOptio
   const pendingSnapshot = useRef<number | null>(null)
 
   useEffect(() => {
+    let resizeTimer: ReturnType<typeof setTimeout> | null = null
+    let resizeProgress = journeyRuntime.progress
+    const onResize = () => {
+      if (resizeTimer === null) resizeProgress = journeyRuntime.progress
+      else clearTimeout(resizeTimer)
+      resizeTimer = setTimeout(() => {
+        const sections = Array.from(document.querySelectorAll<HTMLElement>('[data-mobile-chapter]'))
+        let target = resizeProgress * getMaxScroll()
+        if (sections.length === 6) {
+          const marks = [0, .2275, .3875, .5575, .73, 1]
+          const index = marks.reduce((found, mark, i) => mark <= resizeProgress ? i : found, 0)
+          const fraction = (resizeProgress - marks[index]) / Math.max(.001, (marks[index + 1] ?? 1) - marks[index])
+          target = sections[index].offsetTop + ((sections[index + 1]?.offsetTop ?? getMaxScroll()) - sections[index].offsetTop) * fraction
+        }
+        lenisRef.current?.resize()
+        resizeTimer = null
+        if (lenisRef.current) lenisRef.current.scrollTo(target, { immediate: true, force: true })
+        else window.scrollTo({ top: target, behavior: 'instant' })
+        ScrollTrigger.refresh()
+      }, 150)
+    }
+    window.addEventListener('resize', onResize, { passive: true })
     const updateSnapshot = (next: number, nextVelocity: number) => {
       const now = performance.now()
       if (now - lastSnapshot.current < 80 && next < 1 && next > 0) {
@@ -38,21 +60,36 @@ export function useJourneyScroll({ reducedMotion, chapters }: JourneyScrollOptio
           pendingSnapshot.current = window.setTimeout(() => {
             pendingSnapshot.current = null
             lastSnapshot.current = performance.now()
-            setProgress(next)
-            setVelocity(nextVelocity)
+            setProgress(journeyRuntime.progress)
+            setVelocity(journeyRuntime.velocity)
           }, 80)
         }
         return
       }
       lastSnapshot.current = now
+      if (pendingSnapshot.current !== null) {
+        window.clearTimeout(pendingSnapshot.current)
+        pendingSnapshot.current = null
+      }
       setProgress(next)
       setVelocity(nextVelocity)
     }
 
     const onScroll = ({ scroll, velocity: nextVelocity = 0 }: { scroll?: number; velocity?: number }) => {
-      const next = Math.min(1, Math.max(0, (scroll ?? window.scrollY) / getMaxScroll()))
+      if (resizeTimer !== null) return
+      const offset = scroll ?? window.scrollY
+      let next = Math.min(1, Math.max(0, offset / getMaxScroll()))
+      const sections = Array.from(document.querySelectorAll<HTMLElement>('[data-mobile-chapter]'))
+      if (sections.length === 6) {
+        const marks = [0, .2275, .3875, .5575, .73, 1]
+        const index = sections.reduce((found, section, i) => section.offsetTop <= offset + 1 ? i : found, 0)
+        const start = sections[index].offsetTop
+        const end = sections[index + 1]?.offsetTop ?? getMaxScroll()
+        const local = Math.max(0, Math.min(1, (offset - start) / Math.max(1, end - start)))
+        next = marks[index] + ((marks[index + 1] ?? 1) - marks[index]) * local
+      }
       setJourneyProgress(next, nextVelocity)
-      journeyRuntime.progress = next
+      ScrollTrigger.update()
       updateSnapshot(next, nextVelocity)
       document.documentElement.style.setProperty('--journey-progress', String(next))
       document.documentElement.style.setProperty('--scroll-velocity', String(nextVelocity))
@@ -66,32 +103,37 @@ export function useJourneyScroll({ reducedMotion, chapters }: JourneyScrollOptio
       const ticker = (time: number) => lenis?.raf(time * 1000)
       gsap.ticker.add(ticker)
       ScrollTrigger.refresh()
+      onScroll({ scroll: lenis.scroll, velocity: 0 })
       return () => {
         gsap.ticker.remove(ticker)
         lenis?.destroy()
         lenisRef.current = null
         if (pendingSnapshot.current !== null) window.clearTimeout(pendingSnapshot.current)
+        pendingSnapshot.current = null
+        window.removeEventListener('resize', onResize)
+        if (resizeTimer !== null) clearTimeout(resizeTimer)
       }
     }
 
     const nativeScroll = () => onScroll({ scroll: window.scrollY, velocity: 0 })
     nativeScroll()
     window.addEventListener('scroll', nativeScroll, { passive: true })
-    window.addEventListener('resize', nativeScroll, { passive: true })
     return () => {
       window.removeEventListener('scroll', nativeScroll)
-      window.removeEventListener('resize', nativeScroll)
+      window.removeEventListener('resize', onResize)
+      if (resizeTimer !== null) clearTimeout(resizeTimer)
       if (pendingSnapshot.current !== null) window.clearTimeout(pendingSnapshot.current)
+      pendingSnapshot.current = null
     }
   }, [reducedMotion])
 
-  const goToChapter = useCallback((id: ChapterId) => {
+  const goToChapter = useCallback((id: ChapterId, immediate = false) => {
     const chapter = chapters.find((item) => item.id === id)
     if (!chapter) return
-    const target = ((chapter.range[0] + chapter.range[1]) / 2) * getMaxScroll()
-    window.history.replaceState({}, '', `#${id}`)
-    if (lenisRef.current) lenisRef.current.scrollTo(target)
-    else window.scrollTo({ top: target, behavior: reducedMotion ? 'auto' : 'smooth' })
+    const section = document.querySelector<HTMLElement>(`[data-mobile-chapter="${id}"]`)
+    const target = section ? section.offsetTop : ((chapter.range[0] + chapter.range[1]) / 2) * getMaxScroll()
+    if (lenisRef.current) lenisRef.current.scrollTo(target, { immediate, force: true })
+    else window.scrollTo({ top: target, behavior: reducedMotion || immediate ? 'auto' : 'smooth' })
   }, [chapters, reducedMotion])
 
   return { progress, velocity, goToChapter, lenisRef }

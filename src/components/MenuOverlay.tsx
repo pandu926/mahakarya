@@ -38,7 +38,7 @@ export default function MenuOverlay({
         <div className="mk-overlay-header"><span className="mk-eyebrow">Navigation / 00</span><button type="button" className="mk-overlay-close" onClick={onClose} aria-label="Close menu"><span /><span /></button></div>
         <div className="mk-menu-panel__body">
           <div className="mk-menu-chapters"><h2 id="menu-title">The chapters</h2><ol>{chapters.map((chapter) => <li key={chapter.id}><button type="button" onClick={() => onSelect(chapter)}><span>{chapter.number}</span>{chapter.label}<ArrowIcon /></button></li>)}</ol></div>
-          <div className="mk-menu-aside"><span className="mk-eyebrow">Current chapter</span><strong>{activeChapter.number} / {activeChapter.label}</strong><p>{activeChapter.subtitle || activeChapter.description}</p><span className="mk-menu-aside__rule" /><span className="mk-eyebrow">Say hello</span><a href={`mailto:${profile.email}`}>{profile.email}</a><small>{profile.role}</small></div>
+          <div className="mk-menu-aside"><img className="mk-menu-preview" src={`/assets/images/chapters/${activeChapter.id}.jpg`} alt="" /><span className="mk-eyebrow">Current chapter</span><strong>{activeChapter.number} / {activeChapter.label}</strong><p>{activeChapter.subtitle || activeChapter.description}</p><span className="mk-menu-aside__rule" /><span className="mk-eyebrow">Say hello</span><a href={`mailto:${profile.email}`}>{profile.email}</a><small>{profile.role}</small></div>
         </div>
       </div>
     </aside>

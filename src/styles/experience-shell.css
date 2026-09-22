@@ -78,27 +78,9 @@
 .mk-cinematic-stage h1 { color: var(--mk-ink-primary); font-family: 'Barlow Condensed', sans-serif; font-size: clamp(54px, 5vw, 78px); font-weight: 300; letter-spacing: .075em; line-height: .9; margin: 18px 0 20px; max-width: 10ch; text-transform: uppercase; }
 .mk-cinematic-stage__kicker { color: var(--mk-gold); font-size: 11px; letter-spacing: .24em; margin: 0 0 20px; text-transform: uppercase; }
 .mk-cinematic-stage__description { color: var(--mk-ink-secondary); font-size: 15px; line-height: 1.65; margin: 0; max-width: 42ch; }
-.mk-manifesto-copy { color: var(--mk-ink-primary); font-family: 'Barlow Condensed', sans-serif; font-size: clamp(22px, 2vw, 30px); font-weight: 300; line-height: 1.15; margin: 26px 0 0; }
 .mk-cinematic-stage__meta { align-items: center; bottom: 28%; color: var(--mk-ink-muted); display: flex; font-size: 9px; gap: 12px; letter-spacing: .25em; position: absolute; right: var(--mk-safe-x); text-transform: uppercase; transform: rotate(90deg) translateX(100%); transform-origin: right center; }
 .mk-cinematic-stage__meta i { background: var(--mk-gold); display: block; height: 1px; width: 45px; }
 
-.mk-cinematic-stage__state-art { inset: 0; pointer-events: none; position: absolute; }
-.mk-state-art__horizon, .mk-state-art__monument, .mk-state-art__signal { display: block; position: absolute; }
-.mk-state-art__horizon { background: linear-gradient(90deg, transparent, rgba(183,213,234,.18), transparent); bottom: 29%; height: 1px; left: 38%; right: 7%; }
-.mk-state-art__monument { background: #16232b; box-shadow: 0 28px 0 -11px rgba(231,184,107,.14); height: 35vh; right: 17%; top: 21%; transform: perspective(500px) rotateY(-10deg); width: 20vw; }
-.mk-state-art__signal { background: linear-gradient(180deg, transparent, var(--mk-gold), transparent); height: 31vh; right: 27%; top: 24%; width: 1px; }
-.mk-cinematic-stage--portal .mk-state-art__monument { background: linear-gradient(90deg, #0d171d 0 38%, rgba(231,184,107,.35) 39% 40%, #0d171d 41% 61%, rgba(231,184,107,.35) 62% 63%, #0d171d 64%); height: 54vh; right: 15%; top: 13%; width: 28vw; }
-.mk-cinematic-stage--portal .mk-state-art__signal { height: 50vh; right: 28.5%; top: 15%; }
-.mk-cinematic-stage--island .mk-state-art__monument { background: radial-gradient(ellipse at 50% 22%, #657265 0 11%, transparent 12%), #232e33; border-radius: 50% 42% 38% 45%; height: 18vh; right: 18%; top: 34%; transform: rotate(-7deg); width: 25vw; }
-.mk-cinematic-stage--island .mk-state-art__signal { background: var(--mk-cool-light); border-radius: 50%; box-shadow: 0 0 30px rgba(183,213,234,.5); height: 8px; right: 28%; top: 31%; width: 8px; }
-.mk-cinematic-stage--structure .mk-state-art__monument { background: repeating-linear-gradient(90deg, transparent 0 8%, rgba(231,184,107,.55) 8.2% 8.8%, transparent 9% 22%), repeating-linear-gradient(0deg, transparent 0 16%, rgba(183,213,234,.38) 16.2% 16.8%, transparent 17% 30%), #141f28; height: 38vh; right: 10%; top: 24%; transform: perspective(340px) rotateX(25deg) rotateZ(-5deg); width: 41vw; }
-.mk-cinematic-stage--structure .mk-state-art__signal { height: 18vh; right: 38%; top: 34%; transform: rotate(90deg); width: 2px; }
-.mk-cinematic-stage--cliff .mk-state-art__monument { background: linear-gradient(125deg, #111b21 15%, #4b5a60 16% 25%, #19252b 26% 52%, #566369 53% 56%, #152129 57%); clip-path: polygon(0 72%, 18% 34%, 37% 58%, 54% 19%, 73% 44%, 100% 4%, 100% 100%, 0 100%); height: 55vh; right: 7%; top: 30%; width: 47vw; }
-.mk-cinematic-stage--cliff .mk-state-art__signal { height: 29vh; right: 21%; top: 39%; transform: rotate(6deg); }
-.mk-cinematic-stage--orrery .mk-state-art__monument { background: transparent; border: 1px solid rgba(183,213,234,.5); border-radius: 50%; box-shadow: 0 0 0 56px rgba(183,213,234,.06), 0 0 0 112px rgba(183,213,234,.035); height: 24vw; right: 17%; top: 23%; width: 24vw; }
-.mk-cinematic-stage--orrery .mk-state-art__signal { background: var(--mk-gold); border-radius: 50%; box-shadow: 0 0 18px var(--mk-gold); height: 8px; right: 29%; top: 29%; width: 8px; }
-.mk-cinematic-stage--horizon .mk-state-art__monument { background: radial-gradient(circle, rgba(255,217,155,.9) 0, rgba(231,184,107,.22) 19%, transparent 66%); height: 48vh; right: 20%; top: 17%; width: 30vw; }
-.mk-cinematic-stage--horizon .mk-state-art__signal { background: repeating-linear-gradient(90deg, #17242a 0 12px, transparent 12px 20px); bottom: 23%; height: 18vh; left: 44%; right: 5%; top: auto; width: auto; }
 
 .mk-detail-list, .mk-process-stages { border-top: 1px solid var(--mk-line-dim); list-style: none; margin: 28px 0 0; max-width: 500px; padding: 0; }
 .mk-detail-list li, .mk-process-stages li { border-bottom: 1px solid var(--mk-line-soft); color: var(--mk-ink-secondary); font-size: 10px; letter-spacing: .12em; padding: 12px 0; text-transform: uppercase; }
@@ -133,17 +115,6 @@ button:hover .mk-arrow, a:hover .mk-arrow { transform: translate(3px, -3px); }
 .mk-story-index__item.is-active::before, .mk-story-index__item:hover::before { opacity: 1; transform: scaleX(1); }
 .mk-story-index__item:hover .mk-preview { transform: scale(1.025); }
 .mk-preview { background: linear-gradient(135deg, #1b2b33, #09131a); inset: 0; position: absolute; transition: transform 500ms var(--mk-ease-micro); }
-.mk-preview__horizon, .mk-preview__monument, .mk-preview__signal { display: block; position: absolute; }
-.mk-preview__horizon { background: linear-gradient(90deg, transparent, rgba(183,213,234,.2), transparent); bottom: 26%; height: 1px; left: 5%; right: 5%; }
-.mk-preview__monument { background: #283a40; height: 45%; left: 32%; top: 28%; width: 36%; }
-.mk-preview__signal { background: var(--mk-gold); height: 35%; left: 58%; opacity: .8; top: 25%; width: 1px; }
-.mk-preview--portal .mk-preview__monument { background: linear-gradient(90deg, #0c171d 0 35%, var(--mk-gold-dim) 36% 38%, #0c171d 39% 62%, var(--mk-gold-dim) 63% 65%, #0c171d 66%); height: 75%; left: 25%; top: 12%; width: 50%; }
-.mk-preview--island .mk-preview__monument { border-radius: 50%; height: 34%; left: 27%; top: 34%; transform: rotate(-8deg); width: 47%; }
-.mk-preview--structure .mk-preview__monument { background: repeating-linear-gradient(90deg, transparent 0 12%, rgba(231,184,107,.6) 13% 15%, transparent 16% 30%), #20323a; height: 58%; left: 18%; top: 20%; transform: skew(-10deg); width: 64%; }
-.mk-preview--cliff .mk-preview__monument { background: linear-gradient(145deg, #17252c 0 35%, #516069 36% 52%, #18262e 53%); clip-path: polygon(0 64%, 28% 29%, 50% 53%, 68% 18%, 100% 0, 100% 100%, 0 100%); height: 76%; left: 0; top: 23%; width: 100%; }
-.mk-preview--orrery .mk-preview__monument { background: transparent; border: 1px solid rgba(183,213,234,.6); border-radius: 50%; box-shadow: 0 0 0 18px rgba(183,213,234,.08); height: 58%; left: 25%; top: 19%; width: 50%; }
-.mk-preview--horizon .mk-preview__monument { background: radial-gradient(circle, rgba(255,217,155,.85), transparent 66%); height: 76%; left: 24%; top: 4%; width: 52%; }
-.mk-preview--horizon .mk-preview__signal { background: repeating-linear-gradient(90deg, #17242a 0 8px, transparent 8px 13px); bottom: 18%; height: 26%; left: 8%; right: 8%; top: auto; width: auto; }
 .mk-story-index__shade { background: linear-gradient(0deg, rgba(4,10,14,.92), transparent 70%); inset: 0; position: absolute; z-index: 1; }
 .mk-story-index__copy { bottom: 15px; display: flex; flex-direction: column; gap: 5px; left: 15px; max-width: calc(100% - 45px); position: absolute; z-index: 2; }
 .mk-story-index__copy small { color: var(--mk-gold); font-size: 9px; letter-spacing: .16em; text-transform: uppercase; }
@@ -193,7 +164,6 @@ button:hover .mk-arrow, a:hover .mk-arrow { transform: translate(3px, -3px); }
 .mk-project-panel { padding-top: clamp(72px, 10vh, 120px); }
 .mk-project-panel__body { display: grid; gap: clamp(28px, 6vw, 96px); grid-template-columns: minmax(260px, .8fr) minmax(0, 1fr); margin-top: clamp(35px, 6vh, 72px); }
 .mk-project-panel__visual { background: linear-gradient(150deg, #2e3c43, #081219 72%); min-height: 420px; overflow: hidden; position: relative; }
-.mk-project-panel__visual .mk-preview__monument { height: 50%; left: 25%; top: 25%; width: 50%; }
 .mk-project-panel__copy h2 { font-family: 'Barlow Condensed', sans-serif; font-size: clamp(42px, 6vw, 92px); font-weight: 300; letter-spacing: .03em; line-height: .9; margin: 0 0 16px; max-width: 12ch; text-transform: uppercase; }
 .mk-project-panel__role { color: var(--mk-gold); font-size: 10px; letter-spacing: .23em; margin: 0 0 30px; text-transform: uppercase; }
 .mk-project-panel__outcome { color: var(--mk-ink-primary); font-family: 'Barlow Condensed', sans-serif; font-size: clamp(21px, 2.3vw, 31px); font-weight: 300; line-height: 1.16; margin: 0 0 40px; max-width: 24ch; }
@@ -245,7 +215,6 @@ button:hover .mk-arrow, a:hover .mk-arrow { transform: translate(3px, -3px); }
   .mk-cinematic-stage h1 { font-size: clamp(44px, 14vw, 66px); letter-spacing: .02em; }
   .mk-cinematic-stage__kicker { font-size: 10px; letter-spacing: .16em; }
   .mk-cinematic-stage__description { font-size: 14px; max-width: 34ch; }
-  .mk-manifesto-copy { font-size: 21px; }
   .mk-scroll-cue { margin-top: 34px; }
   .mk-cinematic-stage__meta { display: none; }
   .mk-story-index { bottom: max(16px, env(safe-area-inset-bottom)); }

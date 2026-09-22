@@ -1,107 +1,73 @@
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import type { ChapterWorldProps } from '../experience/types'
-import { createSeededRandom, getLocalProgress, getSectionWeight, journeyRuntime } from '../experience/runtime'
-import { COLORS } from './shared'
+import { createSeededRandom, getSectionWeight, journeyRuntime } from '../experience/runtime'
+import { Instances, StoneMaterial, rockGeometry, type InstanceSpec } from './geometry'
 
-interface FragmentSpec {
-  position: [number, number, number]
-  scale: number
-  rotation: [number, number, number]
-  speed: number
-  phase: number
+function treeGeometry() {
+  const random = createSeededRandom(2203)
+  const parts: THREE.BufferGeometry[] = []
+  const tips: THREE.Vector3[] = []
+  const up = new THREE.Vector3(0, 1, 0)
+  function branch(start: THREE.Vector3, direction: THREE.Vector3, length: number, radius: number, depth: number) {
+    const end = start.clone().addScaledVector(direction, length)
+    const g = new THREE.CylinderGeometry(radius * .57, radius, length, 7)
+    g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(up, direction))
+    g.translate(...start.clone().add(end).multiplyScalar(.5).toArray())
+    parts.push(g)
+    if (depth === 0) { tips.push(end); return }
+    for (let i = 0; i < 3; i++) {
+      const angle = i * Math.PI * 2 / 3 + random()
+      const next = new THREE.Vector3(Math.cos(angle) * .7, .55 + random() * .35, Math.sin(angle) * .7).addScaledVector(direction, .45).normalize()
+      branch(end, next, length * .62, radius * .53, depth - 1)
+    }
+  }
+  branch(new THREE.Vector3(), new THREE.Vector3(.12, 1, .05).normalize(), 1.5, .2, 3)
+  const geometry = mergeGeometries(parts)
+  parts.forEach(p => p.dispose())
+  return { geometry, tips }
 }
 
 export function OriginsWorld({ chapter, position, qualityTier, reducedMotion = false }: ChapterWorldProps) {
   const root = useRef<THREE.Group>(null)
-  const island = useRef<THREE.Mesh>(null)
-  const fragments = useRef<THREE.Group>(null)
-  const fragmentSpecs = useMemo<FragmentSpec[]>(() => {
-    const random = createSeededRandom(402)
-    const count = qualityTier === 'low' ? 10 : qualityTier === 'medium' ? 14 : 18
-    return Array.from({ length: count }, (_, index) => {
-      const angle = random() * Math.PI * 2
-      const radius = 3.15 + random() * 1.9
-      return {
-        position: [Math.cos(angle) * radius, 1.3 + random() * 3, Math.sin(angle) * radius * 0.54] as [number, number, number],
-        scale: 0.11 + random() * 0.27,
-        rotation: [random() * 2, random() * 2, random() * 2] as [number, number, number],
-        speed: 0.06 + random() * 0.11,
-        phase: index * 0.63 + random() * 5,
-      }
+  const rock = useMemo(() => rockGeometry(2203, 8), [])
+  const island = useMemo(() => {
+    const geometry = rockGeometry(2203, 9)
+    const p = geometry.attributes.position
+    for (let i = 0; i < p.count; i++) {
+      const y = p.getY(i)
+      const taper = y < 0 ? .55 + (y + 1) * .45 : 1
+      p.setXYZ(i, p.getX(i) * taper, Math.min(.5, y), p.getZ(i) * taper)
+    }
+    geometry.computeVertexNormals()
+    return geometry
+  }, [])
+  const tree = useMemo(treeGeometry, [])
+  const canopy = useMemo<InstanceSpec[]>(() => tree.tips.filter((_, i) => i % 2 === 0).map((tip, i) => ({ position: tip.toArray() as [number, number, number], scale: [.48 + i % 2 * .12, .42 + i % 3 * .09, .5], color: ['#777668', '#8e8775', '#646e60'][i % 3] })), [tree])
+  const fragments = useMemo<InstanceSpec[]>(() => {
+    const random = createSeededRandom(2204)
+    return Array.from({ length: qualityTier === 'low' ? 8 : 16 }, (_, i) => {
+      const a = i * 2.399
+      const r = 3.5 + random() * 1.7
+      const s = .12 + random() * .35
+      return { position: [Math.cos(a) * r, 1.8 + random() * 4, Math.sin(a) * r * .5], scale: [s, s * 1.8, s * .7], rotation: [random(), random(), random()] }
     })
   }, [qualityTier])
-
-  useFrame(() => {
-    const progress = journeyRuntime.progress
-    const weight = getSectionWeight(progress, chapter.range)
-    if (weight < 0.01) return
-    const time = reducedMotion ? 0 : performance.now() * 0.001
-    if (island.current) island.current.position.y = 1.8 + (reducedMotion ? 0 : Math.sin(time * 0.7) * 0.08) * weight
-    if (root.current) root.current.rotation.y = (reducedMotion ? 0 : Math.sin(time * 0.16) * 0.035) * weight
-    fragments.current?.children.forEach((fragment, index) => {
-      const spec = fragmentSpecs[index]
-      if (!spec) return
-      const amount = reducedMotion ? 0 : Math.sin(time * spec.speed + spec.phase) * 0.08 * weight
-      fragment.position.y = spec.position[1] + amount
-      if (!reducedMotion) fragment.rotation.y += spec.speed * 0.008
-    })
+  useEffect(() => () => { rock.dispose(); island.dispose(); tree.geometry.dispose() }, [rock, island, tree])
+  useFrame(({ clock }) => {
+    if (root.current) root.current.position.y = position[1] + (reducedMotion ? 0 : Math.sin(clock.elapsedTime * .4) * .08 * getSectionWeight(journeyRuntime.progress, chapter.range))
   })
-
-  const local = getLocalProgress(journeyRuntime.progress, chapter.range)
-
-  return (
-    <group ref={root} position={[position[0], position[1], position[2]]} name="OriginsFloatingIsland">
-      <mesh ref={island} position={[0, 1.8, 0]} scale={[1.2, 0.58, 0.86]} castShadow receiveShadow>
-        <icosahedronGeometry args={[2.65, 1]} />
-        <meshStandardMaterial color={COLORS.basalt} roughness={0.92} metalness={0.04} />
-      </mesh>
-      <mesh position={[0, 2.55, 0]} scale={[1, 1, 0.75]}>
-        <cylinderGeometry args={[2.06, 1.52, 0.27, 9]} />
-        <meshStandardMaterial color={COLORS.stone} roughness={0.86} metalness={0.08} />
-      </mesh>
-      <group position={[0, 2.55, 0]}>
-        <mesh position={[0, 1, 0]}>
-          <cylinderGeometry args={[0.11, 0.22, 1.9, 7]} />
-          <meshStandardMaterial color={COLORS.graphite} roughness={0.72} metalness={0.18} />
-        </mesh>
-        <mesh position={[0, 2.1, 0]} scale={[1, 1.15, 1]}>
-          <icosahedronGeometry args={[0.78, 1]} />
-          <meshStandardMaterial color="#28504c" roughness={0.9} metalness={0.04} />
-        </mesh>
-        <mesh position={[-0.36, 2.55, 0.02]} scale={[1, 1.15, 1]}>
-          <icosahedronGeometry args={[0.46, 1]} />
-          <meshStandardMaterial color="#315a52" roughness={0.9} metalness={0.04} />
-        </mesh>
-        <mesh position={[0.38, 2.62, -0.02]} scale={[1, 1.15, 1]}>
-          <icosahedronGeometry args={[0.52, 1]} />
-          <meshStandardMaterial color="#315a52" roughness={0.9} metalness={0.04} />
-        </mesh>
+  return <group position={[...position]} name="OriginsFloatingIsland">
+    <group ref={root}>
+      <mesh geometry={island} position={[0, 2.1, 0]} scale={[2.8, 1.7, 2]}><StoneMaterial color="#596168" roughness={.94} /></mesh>
+      <mesh geometry={island} position={[0, 2.95, 0]} scale={[2.65, .15, 1.9]}><StoneMaterial color="#656357" roughness={.98} /></mesh>
+      <group position={[0, 3.1, 0]}>
+        <mesh geometry={tree.geometry}><meshStandardMaterial color="#514537" roughness={.94} /></mesh>
+        <Instances geometry={rock} items={canopy} />
       </group>
-      <group ref={fragments}>
-        {fragmentSpecs.map((spec, index) => (
-          <mesh key={`origin-fragment-${index}`} position={spec.position} rotation={spec.rotation} scale={spec.scale}>
-            <dodecahedronGeometry args={[1, 0]} />
-            <meshStandardMaterial color={index % 3 === 0 ? COLORS.stoneLight : COLORS.graphite} roughness={0.82} metalness={0.16} />
-          </mesh>
-        ))}
-      </group>
-      <mesh position={[0, 0.2, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[2.8, 3.15, 48]} />
-        <meshBasicMaterial color={COLORS.gold} transparent opacity={0.12 + local * 0.22} blending={THREE.AdditiveBlending} depthWrite={false} />
-      </mesh>
-      <pointLight color="#9fb8ab" intensity={0.4 + local * 0.25} distance={11} position={[0, 4.8, 3]} />
     </group>
-  )
-}
-
-export const chapterConfig = {
-  id: 'origins' as const,
-  number: '02',
-  label: 'Origins',
-  title: 'Where It Began',
-  range: [0.135, 0.32] as const,
-  anchor: 22,
-  landmark: 'floating-island-tree',
+    <Instances geometry={rock} items={fragments} color="#49545b" />
+  </group>
 }

@@ -18,23 +18,30 @@ function WorldLighting({ chapters, qualityTier }: { chapters: readonly ChapterCo
   const warm = useRef<THREE.PointLight>(null)
   const key = useRef<THREE.DirectionalLight>(null)
   const { gl } = useThree()
-  const keyIntensity = qualityTier === 'low' ? 0.55 : qualityTier === 'medium' ? 0.7 : 0.82
+  const keyIntensity = 3.2
 
   useFrame(() => {
     const progress = journeyRuntime.progress
     if (warm.current) {
-      warm.current.position.x = THREE.MathUtils.lerp(0, 118, progress)
-      warm.current.intensity = 0.3 + chapters.reduce((strongest, chapter) => Math.max(strongest, getSectionWeight(progress, chapter.range)), 0) * 0.72
+      let weightedX = 0
+      let totalWeight = 0
+      chapters.forEach(chapter => {
+        const weight = getSectionWeight(progress, chapter.range)
+        weightedX += chapter.worldX * weight
+        totalWeight += weight
+      })
+      warm.current.position.x = totalWeight > 0 ? weightedX / totalWeight : progress * 118
+      warm.current.intensity = 22
     }
     if (key.current) key.current.intensity = keyIntensity
-    gl.toneMappingExposure = THREE.MathUtils.lerp(0.88, 1.04, getSectionWeight(progress, [0.79, 1]))
+    gl.toneMappingExposure = THREE.MathUtils.lerp(1.05, 1.18, THREE.MathUtils.smoothstep(progress, .79, 1))
   })
 
   return (
     <>
-      <hemisphereLight args={['#6d8991', COLORS.night, 0.28]} />
+      <hemisphereLight args={['#b7d5ea', '#293039', 1.65]} />
       <directionalLight ref={key} color="#adc0bf" position={[-12, 18, 12]} castShadow={qualityTier === 'high'} shadow-mapSize={[qualityTier === 'high' ? 1024 : 512, qualityTier === 'high' ? 1024 : 512]} />
-      <pointLight ref={warm} color="#c88a47" intensity={0.8} distance={26} decay={2} position={WORLD_LIGHT_POSITIONS[0]} />
+      <pointLight ref={warm} color="#ffe0b0" intensity={22} distance={24} decay={2} position={WORLD_LIGHT_POSITIONS[0]} />
     </>
   )
 }

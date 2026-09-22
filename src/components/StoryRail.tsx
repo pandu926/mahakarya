@@ -32,11 +32,9 @@ export default function StoryRail({ chapters, activeId, progress, onSelect }: St
               aria-current={active ? 'step' : undefined}
               aria-label={`Preview ${chapter.number} ${chapter.label}: ${chapter.title}`}
             >
-              <span className={`mk-preview mk-preview--${chapter.motif || chapter.id}`} aria-hidden="true">
-                <span className="mk-preview__horizon" /><span className="mk-preview__monument" /><span className="mk-preview__signal" />
-              </span>
+              <img className="mk-preview mk-preview--render" src={`/assets/images/chapters/${chapter.id}.jpg`} alt="" loading={chapter.id === 'prelude' ? 'eager' : 'lazy'} width="660" height="575" />
               <span className="mk-story-index__shade" aria-hidden="true" />
-              <span className="mk-story-index__copy"><small>{chapter.number} &nbsp; {chapter.label}</small><strong>{chapter.title}</strong></span>
+              <span className="mk-story-index__copy"><b>{chapter.number}</b><small>{chapter.label}</small><strong>{['Manifesto, who I am, and why I create.', 'Early experiments and first steps.', 'Skills, tools, and ways of thinking.', 'Selected projects and real-world results.', 'How I work, from problem to solution.', 'Vision, goals, and let’s build together.'][Number(chapter.number) - 1]}</strong></span>
               <span className="mk-story-index__arrow" aria-hidden="true"><ArrowIcon /></span>
             </button>
           )

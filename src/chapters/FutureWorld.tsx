@@ -1,96 +1,23 @@
-import { useMemo, useRef } from 'react'
+import { useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
-import * as THREE from 'three'
 import type { ChapterWorldProps } from '../experience/types'
-import { createSeededRandom, getLocalProgress, getSectionWeight, journeyRuntime } from '../experience/runtime'
-import { COLORS } from './shared'
+import { journeyRuntime } from '../experience/runtime'
+import { City, Human } from './geometry'
 
-interface BuildingSpec {
-  position: [number, number, number]
-  size: [number, number, number]
-}
-
-export function FutureWorld({ chapter, position, qualityTier, reducedMotion = false }: ChapterWorldProps) {
-  const root = useRef<THREE.Group>(null)
-  const sun = useRef<THREE.Mesh>(null)
-  const city = useRef<THREE.Group>(null)
-  const buildings = useMemo<BuildingSpec[]>(() => {
-    const random = createSeededRandom(1801)
-    const count = qualityTier === 'low' ? 11 : qualityTier === 'medium' ? 16 : 22
-    return Array.from({ length: count }, () => {
-      const height = 0.8 + random() * 3.8
-      return {
-        position: [-4.7 + random() * 9.4, height / 2, -1 - random() * 2.8],
-        size: [0.42 + random() * 0.65, height, 0.45 + random() * 0.5],
-      }
-    })
-  }, [qualityTier])
-
-  useFrame(() => {
-    const progress = journeyRuntime.progress
-    const local = getLocalProgress(progress, chapter.range)
-    const weight = getSectionWeight(progress, chapter.range)
-    if (weight < 0.01) return
-    const time = reducedMotion ? 0 : performance.now() * 0.001
-    if (root.current) {
-      root.current.rotation.y = (reducedMotion ? 0 : Math.sin(time * 0.12) * 0.016) * weight
-      root.current.position.y = position[1] + (reducedMotion ? 0 : local * 0.8 * weight)
-    }
-    if (sun.current) {
-      sun.current.scale.setScalar(0.86 + local * 0.16)
-      const material = sun.current.material as THREE.MeshBasicMaterial
-      material.opacity = 0.5 + local * 0.38
-    }
-    if (city.current) city.current.children.forEach((building, index) => {
-      building.position.y = buildings[index].position[1] * (0.72 + local * 0.28)
-    })
-  })
-
-  return (
-    <group ref={root} position={[position[0], position[1], position[2]]} name="FutureGateCity">
-      <mesh position={[-2.9, 4.1, 0]} castShadow>
-        <boxGeometry args={[0.48, 8.2, 0.58]} />
-        <meshStandardMaterial color="#72848a" emissive="#69502b" emissiveIntensity={0.64} metalness={0.58} roughness={0.42} />
-      </mesh>
-      <mesh position={[2.9, 4.1, 0]} castShadow>
-        <boxGeometry args={[0.48, 8.2, 0.58]} />
-        <meshStandardMaterial color="#72848a" emissive="#69502b" emissiveIntensity={0.64} metalness={0.58} roughness={0.42} />
-      </mesh>
-      <mesh position={[0, 8, 0]} castShadow>
-        <boxGeometry args={[6.25, 0.5, 0.58]} />
-        <meshStandardMaterial color="#72848a" emissive="#69502b" emissiveIntensity={0.64} metalness={0.58} roughness={0.42} />
-      </mesh>
-      <group ref={city}>
-        {buildings.map((building, index) => (
-          <mesh key={`future-building-${index}`} position={building.position} castShadow={index % 4 === 0}>
-            <boxGeometry args={building.size} />
-            <meshStandardMaterial color={index % 4 === 0 ? COLORS.steel : COLORS.graphite} roughness={0.66} metalness={0.36} />
-          </mesh>
-        ))}
-      </group>
-      <mesh ref={sun} position={[0, 5.8, -4.3]}>
-        <sphereGeometry args={[1.1, 24, 16]} />
-        <meshBasicMaterial color="#e5bf78" transparent opacity={0.8} blending={THREE.AdditiveBlending} depthWrite={false} />
-      </mesh>
-      <mesh position={[0, 0.3, 1.1]}>
-        <capsuleGeometry args={[0.1, 0.42, 3, 8]} />
-        <meshBasicMaterial color="#050b0f" />
-      </mesh>
-      <mesh position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[13, 9]} />
-        <meshStandardMaterial color="#17272c" roughness={0.82} metalness={0.16} />
-      </mesh>
-      <pointLight color="#e5bf78" intensity={0.75} distance={25} position={[0, 5.8, -2]} />
-    </group>
-  )
-}
-
-export const chapterConfig = {
-  id: 'future' as const,
-  number: '06',
-  label: 'Future',
-  title: "What's Next",
-  range: [0.79, 1] as const,
-  anchor: 118,
-  landmark: 'future-gate-city',
+export function FutureWorld({ position, qualityTier }: ChapterWorldProps) {
+  const uniforms = useMemo(() => ({ uProgress: { value: 0 } }), [])
+  useFrame(() => { uniforms.uProgress.value = Math.max(0, (journeyRuntime.progress - .79) / .21) })
+  return <group position={[...position]} name="FutureGateCity">
+    <City seed={6607} count={qualityTier === 'low' ? 30 : 75} width={21} depth={11} height={6} />
+    {[-3.4, 3.4].map(x => <group key={x} position={[x, 4.6, 0]}>
+      <mesh><boxGeometry args={[.48, 9.2, .8]} /><meshStandardMaterial color="#657179" metalness={.38} roughness={.65} /></mesh>
+      <mesh position={[x > 0 ? -.25 : .25, 0, .12]}><boxGeometry args={[.022, 9.1, .45]} /><meshBasicMaterial color="#ffdfae" /></mesh>
+      {[0, 1, 2, 3, 4].map(i => <mesh key={i} position={[0, -4 + i * 1.9, .42]}><boxGeometry args={[.5, .035, .035]} /><meshStandardMaterial color="#b0a38d" metalness={.5} roughness={.5} /></mesh>)}
+    </group>)}
+    <mesh position={[0, 9.1, 0]}><boxGeometry args={[7.2, .35, .8]} /><meshStandardMaterial color="#69767d" metalness={.4} roughness={.6} /></mesh>
+    <mesh position={[2, 5.7, -15]}><circleGeometry args={[3.2, 80]} /><meshBasicMaterial color="#ffeac8" toneMapped={false} /></mesh>
+    <mesh position={[2, 5.7, -14.9]}><planeGeometry args={[24, 24]} /><shaderMaterial transparent depthWrite={false} uniforms={uniforms} vertexShader="varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}" fragmentShader="varying vec2 vUv;uniform float uProgress;void main(){float d=length(vUv-.5)*2.;float halo=exp(-d*5.)*(.4+uProgress*.3);gl_FragColor=vec4(1.,.69,.33,halo);}" /></mesh>
+    <mesh position={[0, .015, 1.8]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[4, 16]} /><meshStandardMaterial color="#57616a" roughness={.72} metalness={.2} /></mesh>
+    <Human position={[.3, .02, 2.9]} />
+  </group>
 }

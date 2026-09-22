@@ -25,6 +25,8 @@ Open the local Vite URL shown in the terminal. Useful checks are:
 ```bash
 npm test
 npm run lint
+npm run typecheck
+npm run test:browser
 ```
 
 ## Production build
@@ -55,11 +57,15 @@ tests/                 Vitest and React Testing Library coverage
 
 The experience uses one shared R3F `<Canvas>`. React owns semantic content, navigation, overlays, focus behavior, and fallback UI; the WebGL layer owns the continuous spatial world.
 
+`test:browser` starts an isolated Vite server and drives Chromium through eight desktop progress checkpoints, five viewport sizes, project deep links, menu navigation, and a forced no-WebGL fallback. It checks that all six landmarks have finite coordinates and writes screenshots to the temporary directory printed on completion. Use installed Google Chrome, set `CHROME_PATH`, or install Playwright Chromium with `npx playwright install chromium`.
+
 ## Editing personal content
 
 Edit the typed data files in `src/data/` rather than duplicating copy inside components. Chapter order, labels, titles, descriptions, and ranges live in the chapter data. Project titles, roles, outcomes, tags, links, and case-study details live in the project data. Keep chapter IDs stable because they are public hash anchors (`#prelude`, `#origins`, `#craft`, `#impact`, `#process`, and `#future`).
 
 The six reference panels are storyboard/mockup states for horizontal journey movement. The UI should show one active chapter state over the cinematic stage at a time; any chapter rail or bottom index is navigation only and must not merge those states into one static card gallery.
+
+Desktop uses the 1536×1024 composition grid (664px world, 258px index, 102px footer). Below 768px, the six narrative sections form a vertical stack over the same fixed canvas. Fonts are hosted locally. Chapter index/fallback images in `public/assets/images/chapters` are browser captures of the procedural landmarks.
 
 ## Replacing project images
 
@@ -88,7 +94,11 @@ Landmarks are procedural-first and must remain intentional without Blender or ma
 
 ## Performance and quality tiers
 
-The experience supports `high`, `medium`, and `low` tiers. Tiers adjust procedural detail, particle/instance counts, shadows, antialiasing, DPR, and fog density; the main chapter silhouettes and readable DOM content remain stable. Use `active`, `nearby`, and `distant` scene states to avoid expensive updates for chapters outside the camera neighborhood. Apply hysteresis to automatic tier changes so performance does not flicker at a threshold. There is one shared render loop and no React state update for every frame.
+The experience supports `high`, `medium`, and `low` tiers based on viewport and basic device capabilities. Tiers adjust particle/instance counts, shadows, antialiasing, DPR, and fog density. Repeated terrain, buildings, foliage, and architectural beams use instancing. One warm light follows the dominant chapter. There is one shared render loop; React receives throttled UI snapshots, while the camera reads the canonical runtime directly. Automatic frame-time downgrading is not implemented.
+
+## Verification limits
+
+Passing type checks and browser checks does not establish pixel identity with the supplied concept artwork. Procedural geometry, material detail, cloud depth, and reflections still differ from that artwork. Coverage thresholds currently apply to the utility/store scope configured in `vite.config.ts`, not the complete WebGL scene; browser screenshots are the visual-review evidence.
 
 ## Accessibility behavior
 

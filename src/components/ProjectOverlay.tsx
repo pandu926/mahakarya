@@ -29,7 +29,7 @@ export default function ProjectOverlay({
       <div className="mk-project-panel" ref={panelRef} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>
         <div className="mk-overlay-header"><span className="mk-eyebrow">{project.number} / Impact</span><button type="button" className="mk-overlay-close" onClick={onClose} aria-label="Close project detail"><span /><span /></button></div>
         <div className="mk-project-panel__body">
-          <div className={`mk-project-panel__visual mk-preview--${motif}`} aria-hidden="true"><span className="mk-preview__horizon" /><span className="mk-preview__monument" /><span className="mk-preview__signal" /></div>
+          <div className={`mk-project-panel__visual mk-preview--${motif}`}><img src="/assets/images/chapters/impact.jpg" alt="Procedural cliff-city study representing the selected project" /></div>
           <div className="mk-project-panel__copy">
             <h2 id={titleId}>{project.title}</h2>
             <p className="mk-project-panel__role">{project.role}</p>

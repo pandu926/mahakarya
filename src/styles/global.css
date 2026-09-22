@@ -1,4 +1,8 @@
 @import './experience-shell.css';
+@import './composition.css';
+
+@font-face { font-family: Manrope; src: url('/assets/fonts/manrope-regular.ttf') format('truetype'); font-weight: 300 600; font-display: swap; }
+@font-face { font-family: 'Barlow Condensed'; src: url('/assets/fonts/barlow-condensed-light.ttf') format('truetype'); font-weight: 300; font-display: swap; }
 
 :root {
   --mk-bg-void: #071018;
@@ -27,7 +31,8 @@
 
 html { background: var(--mk-bg-void); color: var(--mk-ink-primary); min-height: 100%; }
 
-body, #root { background: var(--mk-bg-void); color: var(--mk-ink-primary); margin: 0; min-height: 100%; }
+body, #root { background: var(--mk-bg-void); color: var(--mk-ink-primary); margin: 0; min-height: 100%; font-family: Manrope, sans-serif; }
+button, input, a { font: inherit; }
 
 .mk-app-shell { background: var(--mk-bg-void); isolation: isolate; min-height: 100svh; position: relative; }
 .webgl-stage, .webgl-stage--fallback { background-color: var(--mk-bg-void) !important; }

@@ -3,7 +3,10 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  build: { chunkSizeWarningLimit: 900 },
+  build: {
+    chunkSizeWarningLimit: 900,
+    rollupOptions: { output: { manualChunks: { three: ['three'] } } },
+  },
   test: {
     environment: 'jsdom',
     globals: true,
@@ -13,6 +16,7 @@ export default defineConfig({
       exclude: [
         'dist/**',
         'coverage/**',
+        'scripts/**',
         '*.config.{js,ts}',
         'src/App.{jsx,tsx}',
         'src/main.{jsx,tsx}',

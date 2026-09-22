@@ -1,7 +1,10 @@
+import { useLayoutEffect, useRef } from 'react'
+import gsap from 'gsap'
 import ArrowIcon from './ArrowIcon'
 import type { ChapterConfig, ChapterSelectHandler, ProjectItem, ProjectSelectHandler, Profile } from './experienceTypes'
 
 interface HeroManifestoProps {
+  mobile?: boolean
   chapter: ChapterConfig
   chapters: readonly ChapterConfig[]
   projects: readonly ProjectItem[]
@@ -16,6 +19,7 @@ function list(value: unknown): readonly string[] {
 }
 
 export default function HeroManifesto({
+  mobile = false,
   chapter,
   chapters,
   projects,
@@ -24,35 +28,37 @@ export default function HeroManifesto({
   onNext,
   onOpenProject,
 }: HeroManifestoProps) {
+  const stage = useRef<HTMLElement>(null)
+  useLayoutEffect(() => {
+    if (!stage.current || mobile || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const context = gsap.context(() => {
+      gsap.fromTo('.mk-cinematic-stage__content', { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: .65, ease: 'power3.out' })
+    }, stage)
+    return () => context.revert()
+  }, [chapter.id, mobile])
   const copy = chapter.copy || {}
   const title = chapter.id === 'prelude' ? 'Mahakarya' : chapter.heading || chapter.title
   const kicker = chapter.id === 'prelude' ? chapter.kicker : chapter.subtitle
   const milestones = list(copy.milestones)
   const modules = list(copy.modules)
   const stages = list(copy.stages)
+  const Heading = mobile && chapter.id !== 'prelude' ? 'h2' : 'h1'
+  const titleId = mobile ? `story-stage-title-${chapter.id}` : 'story-stage-title'
 
   return (
     <section
+      ref={stage}
       className={`mk-cinematic-stage mk-cinematic-stage--${chapter.motif || chapter.id}`}
-      aria-labelledby="story-stage-title"
+      aria-labelledby={titleId}
       aria-label="Cinematic chapter state"
       data-storyboard-state={chapter.id}
       data-chapter-index={chapter.number}
     >
-      <div className="mk-cinematic-stage__state-art" aria-hidden="true">
-        <span className="mk-state-art__horizon" />
-        <span className="mk-state-art__monument" />
-        <span className="mk-state-art__signal" />
-      </div>
       <div className="mk-cinematic-stage__content">
-        <span className="mk-eyebrow"><span>{chapter.number}</span> {chapter.label}</span>
-        <h1 id="story-stage-title">{title}</h1>
+        {chapter.id !== 'prelude' && <span className="mk-eyebrow"><span>{chapter.number}</span> {chapter.label}</span>}
+        <Heading id={titleId}>{title}</Heading>
         {kicker && <p className="mk-cinematic-stage__kicker">{kicker}</p>}
-        <p className="mk-cinematic-stage__description">{chapter.description}</p>
-
-        {chapter.id === 'prelude' && (
-          <p className="mk-manifesto-copy">Setiap langkah, sebuah makna.<br />Setiap karya, jejak perubahan.</p>
-        )}
+        <p className="mk-cinematic-stage__description">{chapter.id === 'prelude' ? chapter.description.split('. ').map((sentence, i, all) => <span key={sentence}>{sentence}{i < all.length - 1 ? '.' : ''}{i < all.length - 1 && <br />}</span>) : chapter.description}</p>
 
         {chapter.id === 'origins' && milestones.length > 0 && (
           <ul className="mk-detail-list mk-detail-list--milestones" aria-label="Origins milestones">
@@ -99,7 +105,8 @@ export default function HeroManifesto({
           </button>
         )}
       </div>
-      <div className="mk-cinematic-stage__meta" aria-hidden="true"><span>Scroll to explore</span><i /></div>
+      <div className="mk-cinematic-stage__meta" aria-hidden="true"><span>More<br />than work</span><i /><small>A positive legacy</small></div>
+      {chapter.id === 'prelude' && <div className="mk-travel-hint" aria-hidden="true"><i /><span>Scroll<br />to travel<br />through<br />my story</span></div>}
     </section>
   )
 }

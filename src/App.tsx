@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
-import gsap from 'gsap'
 import A11yAnnouncements from './components/A11yAnnouncements'
 import AtmosphereOverlay from './components/AtmosphereOverlay'
 import ChapterRail from './components/ChapterRail'
@@ -17,7 +16,7 @@ import { chapters } from './data/chapters'
 import { profile, projects } from './data/projects'
 import { useExperienceStore } from './store/experienceStore'
 import { useJourneyScroll } from './hooks/useJourneyScroll'
-import { getLocalProgress } from './experience/runtime'
+import { getLocalProgress, getDominantChapter } from './experience/runtime'
 import { WebGLStage } from './experience/WebGLStage'
 import type { ChapterId } from './types'
 
@@ -39,17 +38,16 @@ const uiProjects = projects.map((project) => ({
 const uiProfile = profile as unknown as UIProfile
 
 function dominantChapter(progress: number) {
-  return chapters.reduce((active, chapter) => {
-    const activeCenter = (active.range[0] + active.range[1]) / 2
-    const nextCenter = (chapter.range[0] + chapter.range[1]) / 2
-    return Math.abs(progress - nextCenter) < Math.abs(progress - activeCenter) ? chapter : active
-  }, chapters[0])
+  return getDominantChapter(progress, chapters) ?? chapters[0]
 }
 
 export default function App() {
   const [reducedMotion, setReducedMotion] = useState(false)
   const [loaderVisible, setLoaderVisible] = useState(true)
   const [loaderProgress, setLoaderProgress] = useState(0)
+  const [worldReady, setWorldReady] = useState(false)
+  const [mobile, setMobile] = useState(() => window.innerWidth < 768)
+  const onWorldReady = useCallback(() => setWorldReady(true), [])
   const menuButtonRef = useRef<HTMLButtonElement>(null)
   const menuPanelRef = useRef<HTMLDivElement>(null)
   const projectPanelRef = useRef<HTMLDivElement>(null)
@@ -79,37 +77,67 @@ export default function App() {
   }, [setReducedMotionStore])
 
   useEffect(() => {
+    const media = window.matchMedia('(max-width: 767px)')
+    const update = () => setMobile(media.matches)
+    media.addEventListener('change', update)
+    return () => media.removeEventListener('change', update)
+  }, [])
+
+  useEffect(() => {
     const next = dominantChapter(progress)
     if (next.id !== activeId) setActiveChapter(next.id)
   }, [activeId, progress, setActiveChapter])
 
   useEffect(() => {
-    const context = gsap.context(() => {
-      const start = performance.now()
-      const tick = () => {
-        const value = Math.min(100, Math.round(((performance.now() - start) / 550) * 100))
-        setLoaderProgress(value)
-        if (value < 100) requestAnimationFrame(tick)
-        else setLoaderVisible(false)
-      }
-      requestAnimationFrame(tick)
+    let cancelled = false
+    setLoaderProgress(worldReady ? 75 : 10)
+    void document.fonts.ready.then(() => {
+      if (cancelled) return
+      setLoaderProgress(worldReady ? 100 : 25)
+      if (worldReady) setLoaderVisible(false)
     })
-    return () => context.revert()
-  }, [])
+    return () => { cancelled = true }
+  }, [worldReady])
 
   useEffect(() => {
-    const hash = window.location.hash.replace(/^#/, '').split('/')[0] as ChapterId
+    const [hash, slug] = window.location.hash.replace(/^#/, '').split('/') as [ChapterId, string?]
+    if (hash === 'impact' && projects.some(p => p.slug === slug)) openProject(slug!)
     if (chapters.some((chapter) => chapter.id === hash)) {
-      requestAnimationFrame(() => goToChapter(hash))
+      const frame = requestAnimationFrame(() => goToChapter(hash, true))
+      return () => cancelAnimationFrame(frame)
     }
-  }, [goToChapter])
+  }, [goToChapter, openProject])
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (menuOpen || projectSlug || event.ctrlKey || event.metaKey || event.altKey) return
+      if (event.target instanceof HTMLElement && (event.target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName))) return
+      const id = event.key === 'Home' ? 'prelude' : event.key === 'End' ? 'future' : /^[1-6]$/.test(event.key) ? chapters[Number(event.key) - 1].id : null
+      if (!id) return
+      event.preventDefault()
+      goToChapter(id)
+      window.history.pushState({}, '', `#${id}`)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [goToChapter, menuOpen, projectSlug])
+
+  useEffect(() => {
+    if (menuOpen || projectSlug) lenisRef.current?.stop()
+    else lenisRef.current?.start()
+    const previous = document.body.style.overflow
+    if (menuOpen || projectSlug) document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = previous }
+  }, [menuOpen, projectSlug, lenisRef])
 
   const selectedProject = useMemo(() => projects.find((project) => project.slug === projectSlug) ?? null, [projectSlug])
 
   const selectChapter = useCallback((chapter: UIChapter) => {
+    lenisRef.current?.start()
     goToChapter(chapter.id as ChapterId)
+    window.history.pushState({}, '', `#${chapter.id}`)
     closeMenu()
-  }, [closeMenu, goToChapter])
+  }, [closeMenu, goToChapter, lenisRef])
 
   const selectProject = useCallback((project: UIProject) => {
     restoreFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
@@ -128,7 +156,7 @@ export default function App() {
   useEffect(() => {
     const onPopState = () => {
       const [chapterId, slug] = window.location.hash.replace(/^#/, '').split('/')
-      if (slug) openProject(slug)
+      if (chapterId === 'impact' && projects.some(p => p.slug === slug)) openProject(slug)
       else closeProject()
       if (chapters.some((chapter) => chapter.id === chapterId)) goToChapter(chapterId as ChapterId)
     }
@@ -141,23 +169,24 @@ export default function App() {
   }, [closeProject, goToChapter, openProject])
 
   const localProgress = getLocalProgress(progress, activeChapter.range)
-  const scrollSpacerStyle = { height: '620vh' }
+  const scrollSpacerStyle = { height: '720vh' }
 
   return (
     <div className="mk-app-shell" data-active-chapter={activeChapter.id} style={{ '--journey-progress': progress, '--scroll-velocity': velocity } as CSSProperties}>
       <Loader visible={loaderVisible} progress={loaderProgress} />
-      <WebGLStage progress={progress} velocity={velocity} reducedMotion={reducedMotion} onAvailabilityChange={setWebglAvailable} />
+      <WebGLStage activeChapter={activeChapter.id} reducedMotion={reducedMotion} onAvailabilityChange={setWebglAvailable} onReady={onWorldReady} />
       {!webglAvailable && <div className="mk-static-world-fallback" aria-hidden="true" />}
       <AtmosphereOverlay />
+      <a className="mk-skip-link" href="#portfolio-content">Skip to story</a>
       <TopBar scrolled={progress > 0.03} menuOpen={menuOpen} onHome={() => goToChapter('prelude')} onToggleMenu={() => menuOpen ? closeMenu() : openMenu()} menuButtonRef={menuButtonRef} />
       <ChapterRail chapters={uiChapters} activeId={activeChapter.id} progress={progress} onSelect={selectChapter} />
       <CurrentChapterIndicator number={activeChapter.number} label={activeChapter.label} total={chapters.length} />
-      <main id="portfolio-content" className="mk-content">
-        <HeroManifesto chapter={uiChapters[activeChapter.index] ?? uiChapters[0]} chapters={uiChapters} projects={uiProjects} profile={uiProfile} localProgress={localProgress} onNext={selectChapter} onOpenProject={selectProject} />
+      <main id="portfolio-content" className={`mk-content${mobile ? ' mk-content--mobile' : ''}`}>
+        {mobile ? uiChapters.map(chapter => <div key={chapter.id} data-mobile-chapter={chapter.id}><HeroManifesto mobile chapter={chapter} chapters={uiChapters} projects={uiProjects} profile={uiProfile} localProgress={chapter.id === activeId ? localProgress : 0} onNext={selectChapter} onOpenProject={selectProject} /></div>) : <HeroManifesto chapter={uiChapters[activeChapter.index] ?? uiChapters[0]} chapters={uiChapters} projects={uiProjects} profile={uiProfile} localProgress={localProgress} onNext={selectChapter} onOpenProject={selectProject} />}
         <StoryRail chapters={uiChapters} activeId={activeChapter.id} progress={progress} onSelect={selectChapter} />
         <Footer profile={uiProfile} progress={progress} />
-        <div className="mk-scroll-spacer" style={scrollSpacerStyle} aria-hidden="true" />
       </main>
+      {!mobile && <div className="mk-scroll-spacer" style={scrollSpacerStyle} aria-hidden="true" />}
       <MenuOverlay open={menuOpen} chapters={uiChapters} activeChapter={uiChapters[activeChapter.index] ?? uiChapters[0]} profile={uiProfile} panelRef={menuPanelRef} restoreFocusRef={menuButtonRef} onClose={closeMenu} onSelect={selectChapter} />
       <ProjectOverlay project={selectedProject ? (uiProjects.find((project) => project.id === selectedProject.id) ?? null) : null} motif="cliff" panelRef={projectPanelRef} restoreFocusRef={restoreFocusRef} onClose={closeProjectOverlay} />
       <CustomCursor />

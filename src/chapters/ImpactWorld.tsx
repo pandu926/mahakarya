@@ -1,120 +1,31 @@
-import { useMemo, useRef } from 'react'
+import { useMemo, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import type { ChapterWorldProps } from '../experience/types'
-import { createPointsGeometry, getLocalProgress, getSectionWeight, journeyRuntime } from '../experience/runtime'
-import { COLORS } from './shared'
+import { journeyRuntime } from '../experience/runtime'
+import { City, Instances, rockGeometry, type InstanceSpec } from './geometry'
 
-const WATERFALL_VERTEX = `
-  varying vec2 vUv;
-  uniform float uTime;
-  void main() {
-    vUv = uv;
-    vec3 transformed = position;
-    transformed.x += sin(uv.y * 13.0 + uTime * 0.5) * 0.035;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(transformed, 1.0);
-  }
-`
-
-const WATERFALL_FRAGMENT = `
-  varying vec2 vUv;
-  uniform float uTime;
-  uniform float uOpacity;
-  void main() {
-    float stream = 0.52 + 0.48 * sin(vUv.x * 29.0 + vUv.y * 5.0 - uTime * 1.8);
-    float edge = smoothstep(0.0, 0.22, vUv.x) * smoothstep(1.0, 0.78, vUv.x);
-    float alpha = edge * (0.28 + stream * 0.24) * uOpacity;
-    gl_FragColor = vec4(0.48, 0.69, 0.73, alpha);
-  }
-`
-
-export function ImpactWorld({ chapter, position, qualityTier, reducedMotion = false }: ChapterWorldProps) {
-  const root = useRef<THREE.Group>(null)
-  const waterfall = useRef<THREE.ShaderMaterial>(null)
-  const slabs = useRef<THREE.Group>(null)
-  const mistGeometry = useMemo(() => createPointsGeometry(qualityTier === 'low' ? 26 : qualityTier === 'medium' ? 40 : 58, 904, { x: 3.2, y: 1.7, z: 0.6, yBase: -0.15 }), [qualityTier])
-  const waterfallMaterial = useMemo(() => new THREE.ShaderMaterial({
-    uniforms: { uTime: { value: 0 }, uOpacity: { value: 0.55 } },
-    vertexShader: WATERFALL_VERTEX,
-    fragmentShader: WATERFALL_FRAGMENT,
-    transparent: true,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    side: THREE.DoubleSide,
-  }), [])
-  const mistMaterial = useMemo(() => new THREE.PointsMaterial({
-    color: COLORS.water,
-    size: qualityTier === 'low' ? 0.12 : 0.16,
-    transparent: true,
-    opacity: 0.3,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-  }), [qualityTier])
-
-  useFrame(() => {
-    const progress = journeyRuntime.progress
-    const local = getLocalProgress(progress, chapter.range)
-    const weight = getSectionWeight(progress, chapter.range)
-    if (weight < 0.01) return
-    const time = reducedMotion ? 0 : performance.now() * 0.001
-    if (root.current) root.current.rotation.y = (reducedMotion ? 0 : Math.sin(time * 0.13) * 0.018) * weight
-    if (waterfall.current) {
-      waterfall.current.uniforms.uTime.value = time
-      waterfall.current.uniforms.uOpacity.value = 0.26 + weight * 0.46
-    }
-    if (slabs.current) {
-      slabs.current.children.forEach((slab, index) => {
-        slab.position.y = 5.1 + index * 0.13 + (reducedMotion ? 0 : Math.sin(time * 0.52 + index) * 0.035 * weight)
-        slab.rotation.z = (index - 1) * 0.045 + (reducedMotion ? 0 : Math.sin(time * 0.28 + index) * 0.008)
-      })
-    }
-    if (mistMaterial) mistMaterial.opacity = 0.18 + weight * 0.24 + local * 0.05
-  })
-
-  const projectSlabs = useMemo(() => [
-    { x: -2.4, height: 1.35, color: COLORS.steel },
-    { x: 0, height: 1.59, color: COLORS.gold },
-    { x: 2.35, height: 1.83, color: COLORS.steel },
-  ], [])
-
-  return (
-    <group ref={root} position={[position[0], position[1], position[2]]} name="ImpactCliffsWaterfall">
-      <mesh position={[0, 1.9, 0.8]} rotation={[0, 0, -0.08]} castShadow receiveShadow>
-        <boxGeometry args={[8, 3.8, 2.3]} />
-        <meshStandardMaterial color={COLORS.basalt} roughness={0.94} metalness={0.04} />
-      </mesh>
-      <mesh position={[-0.4, 3.86, 0.3]} rotation={[0, 0, -0.04]}>
-        <boxGeometry args={[6.2, 0.42, 3.1]} />
-        <meshStandardMaterial color={COLORS.stoneLight} roughness={0.72} metalness={0.18} />
-      </mesh>
-      <mesh position={[-1.35, 1.9, -0.78]}>
-        <planeGeometry args={[1.95, 4.4, 12, 16]} />
-        <primitive object={waterfallMaterial} attach="material" />
-      </mesh>
-      <group ref={slabs}>
-        {projectSlabs.map((slab, index) => (
-          <mesh key={`impact-slab-${index}`} position={[slab.x, 5.1 + index * 0.13, -0.2]} castShadow>
-            <boxGeometry args={[1.35, slab.height, 0.35]} />
-            <meshStandardMaterial color={slab.color} emissive={index === 1 ? COLORS.goldDark : '#17252a'} emissiveIntensity={index === 1 ? 0.9 : 0.2} metalness={0.64} roughness={0.4} />
-          </mesh>
-        ))}
-      </group>
-      <points position={[-1.35, 0, -0.84]} geometry={mistGeometry} material={mistMaterial} />
-      <mesh position={[0, 0.02, 0.8]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[12, 8]} />
-        <meshStandardMaterial color="#12242a" roughness={0.72} metalness={0.18} transparent opacity={0.8} />
-      </mesh>
-      <pointLight color={COLORS.gold} intensity={0.45} distance={13} position={[0, 4.8, 3]} />
-    </group>
-  )
-}
-
-export const chapterConfig = {
-  id: 'impact' as const,
-  number: '04',
-  label: 'Impact',
-  title: 'Ideas That Deliver',
-  range: [0.45, 0.665] as const,
-  anchor: 68,
-  landmark: 'cliffs-waterfall-slabs',
+export function ImpactWorld({ position, qualityTier, reducedMotion = false }: ChapterWorldProps) {
+  const rock = useMemo(() => rockGeometry(4409, 3), [])
+  const box = useMemo(() => new THREE.BoxGeometry(1, 1, 1), [])
+  const cliffs = useMemo<InstanceSpec[]>(() => Array.from({ length: 9 }, (_, i) => ({ position: [(i - 4) * 1.6, .8 + (i % 3) * .7, -1.2 - (i % 2) * 2], scale: [1.1, 2.4 + (i % 3) * .8, 1.4], rotation: [0, i * .4, (i % 2 ? 1 : -1) * .1], color: ['#39444a', '#253039', '#4c5558'][i % 3] })), [])
+  const terraces = useMemo<InstanceSpec[]>(() => Array.from({ length: 7 }, (_, i) => ({ position: [(i - 3) * 1.8, 3.3 + (i % 3) * .4, -.8], scale: [1.9, .17, 2.4], color: '#4c5353' })), [])
+  const uniforms = useMemo(() => ({ uTime: { value: 0 } }), [])
+  useEffect(() => () => { rock.dispose(); box.dispose() }, [rock, box])
+  useFrame(({ clock }) => { uniforms.uTime.value = reducedMotion || journeyRuntime.progress >= .985 ? 0 : clock.elapsedTime })
+  return <group position={[...position]} name="ImpactCliffCity">
+    <Instances geometry={rock} items={cliffs} stone />
+    <Instances geometry={box} items={terraces} />
+    <group position={[0, 3.6, -2]}><City seed={4409} count={qualityTier === 'low' ? 25 : 60} width={15} depth={6} height={4} /></group>
+    {[-3.6, .2, 4].map((x, i) => <mesh key={x} position={[x, 1.9 + i * .15, .9]}>
+      <planeGeometry args={[i === 1 ? 1.2 : .7, 4 + i * .3, 2, 12]} />
+      <shaderMaterial transparent depthWrite={false} side={THREE.DoubleSide} uniforms={uniforms} vertexShader="varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}" fragmentShader="varying vec2 vUv;uniform float uTime;void main(){float a=sin(vUv.x*91.+sin(vUv.y*18.+uTime*1.8)*2.)*.14+.42;float edge=smoothstep(0.,.12,vUv.x)*smoothstep(0.,.12,1.-vUv.x);float flow=.7+.3*sin(vUv.y*39.+uTime*3.);float mist=smoothstep(.35,0.,vUv.y);gl_FragColor=vec4(vec3(.65,.73,.77)+mist*.1,edge*(a*flow+mist*.15));}" />
+    </mesh>)}
+    {[-2.7, 0, 2.7].map((x, i) => <group key={x} position={[x, 5.5 + i * .15, 1.6]} rotation={[0, -.12 + i * .12, 0]}>
+      <mesh><boxGeometry args={[1.75, 2.25, .24]} /><meshStandardMaterial color="#17242c" metalness={.22} roughness={.7} /></mesh>
+      <mesh position={[0, 0, .13]}><planeGeometry args={[1.52, 2]} /><meshStandardMaterial color={['#667982', '#6a7167', '#6a6054'][i]} emissive="#53636b" emissiveIntensity={.18} roughness={.8} /></mesh>
+      <mesh position={[-.83, 0, .15]}><boxGeometry args={[.018, 2.15, .02]} /><meshBasicMaterial color="#e7b86b" /></mesh>
+      <mesh position={[0, 0, .16]}><planeGeometry args={[1.46, 1.94]} /><shaderMaterial uniforms={{ uKind: { value: i } }} vertexShader="varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}" fragmentShader="varying vec2 vUv;uniform float uKind;void main(){vec2 p=vUv-.5;float line=0.;if(uKind<.5){vec2 grid=abs(fract(vUv*6.)-.5);line=1.-smoothstep(.015,.03,min(grid.x,grid.y));}else if(uKind<1.5){float ring=abs(fract(length(p)*10.)-.5);line=1.-smoothstep(.02,.05,ring);}else{vec2 q=abs(fract(vUv*4.)-.5);line=1.-smoothstep(.025,.06,abs(max(q.x,q.y)-.32));}float mask=smoothstep(.5,.15,length(p));vec3 c=mix(vec3(.06,.105,.13),vec3(.62,.48,.28),line*mask*.7);gl_FragColor=vec4(c,1.);}" /></mesh>
+    </group>)}
+  </group>
 }
