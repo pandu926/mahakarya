@@ -37,11 +37,11 @@ export function ProcessWorld({ chapter, position, reducedMotion = false }: Chapt
     if (root.current) root.current.rotation.y = (reducedMotion ? 0 : Math.sin(time * 0.14) * 0.025) * weight
     rings.current.forEach((ring, index) => {
       if (!ring) return
-      if (!reducedMotion) ring.rotation.y = index * .035 + Math.sin(time * .12 + index) * .087
+      if (!reducedMotion) ring.rotation.y = [0, -.48, .3, -.22, .18][index] + Math.sin(time * .12 + index) * .087
       const starts = [0, .18, .36, .56, .78, 1]
       const active = getLocalProgress(local, [starts[index], starts[index + 1]])
       ring.scale.setScalar(1 + active * 0.025)
-      if (ringMaterials.current[index]) ringMaterials.current[index]!.emissiveIntensity = 0.16 + active * 0.72 + weight * 0.12
+      if (ringMaterials.current[index]) ringMaterials.current[index]!.emissiveIntensity = index === 2 ? .12 + active * .24 : .02
     })
     nodes.current.forEach((node, index) => {
       if (!node) return
@@ -53,9 +53,9 @@ export function ProcessWorld({ chapter, position, reducedMotion = false }: Chapt
   return (
     <group ref={root} position={[position[0], position[1], position[2]]} name="ProcessOrrery">
       {Array.from({ length: STAGE_COUNT }, (_, index) => (
-        <mesh key={`process-ring-${index}`} ref={(node) => { rings.current[index] = node }} rotation={[index * .065, index * .035, index * .06]} position={[0, 3.7, index * -.16]}>
-          <torusGeometry args={[1.25 + index * 0.52, 0.045 + (index === 2 ? 0.025 : 0), 10, 100]} />
-          <meshStandardMaterial ref={(material) => { ringMaterials.current[index] = material }} color={index === 2 ? COLORS.gold : '#58717a'} emissive={index === 2 ? COLORS.goldDark : '#142b32'} emissiveIntensity={0.24} metalness={0.72} roughness={0.36} transparent opacity={0.84} />
+        <mesh key={`process-ring-${index}`} ref={(node) => { rings.current[index] = node }} rotation={[[.12, -.4, .38, -.18, .08][index], [0, -.48, .3, -.22, .18][index], index * .06]} position={[0, 3.7, index * -.16]}>
+          <torusGeometry args={[1.25 + index * 0.52, .07 + (index === 2 ? .025 : 0), 12, 120]} />
+          <meshStandardMaterial ref={(material) => { ringMaterials.current[index] = material }} color={index === 2 ? '#b39a73' : '#748087'} emissive={index === 2 ? COLORS.goldDark : '#142b32'} emissiveIntensity={.12} metalness={0.72} roughness={0.28} />
         </mesh>
       ))}
       <mesh position={[0, 3.7, 0]}>

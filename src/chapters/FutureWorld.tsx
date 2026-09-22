@@ -15,9 +15,9 @@ export function FutureWorld({ position, qualityTier }: ChapterWorldProps) {
       {[0, 1, 2, 3, 4].map(i => <mesh key={i} position={[0, -4 + i * 1.9, .42]}><boxGeometry args={[.5, .035, .035]} /><meshStandardMaterial color="#b0a38d" metalness={.5} roughness={.5} /></mesh>)}
     </group>)}
     <mesh position={[0, 9.1, 0]}><boxGeometry args={[7.2, .35, .8]} /><meshStandardMaterial color="#69767d" metalness={.4} roughness={.6} /></mesh>
-    <mesh position={[2, 5.7, -15]}><circleGeometry args={[3.2, 80]} /><meshBasicMaterial color="#ffeac8" toneMapped={false} /></mesh>
+    <mesh position={[2, 5.7, -15]}><circleGeometry args={[3.2, 80]} /><meshBasicMaterial color="#fff4db" toneMapped={false} fog={false} /></mesh>
     <mesh position={[2, 5.7, -14.9]}><planeGeometry args={[24, 24]} /><shaderMaterial transparent depthWrite={false} uniforms={uniforms} vertexShader="varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}" fragmentShader="varying vec2 vUv;uniform float uProgress;void main(){float d=length(vUv-.5)*2.;float halo=exp(-d*5.)*(.4+uProgress*.3);gl_FragColor=vec4(1.,.69,.33,halo);}" /></mesh>
-    <mesh position={[0, .015, 1.8]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[4, 16]} /><meshStandardMaterial color="#57616a" roughness={.72} metalness={.2} /></mesh>
+    {[-2, 2].map(x => <mesh key={x} position={[x, -.06, 1.8]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[.025, 16]} /><meshBasicMaterial color="#b18d51" transparent opacity={.6} /></mesh>)}
     <Human position={[.3, .02, 2.9]} />
   </group>
 }

@@ -19,8 +19,22 @@ export function ImpactWorld({ position, qualityTier, reducedMotion = false }: Ch
     <group position={[0, 3.6, -2]}><City seed={4409} count={qualityTier === 'low' ? 25 : 60} width={15} depth={6} height={4} /></group>
     {[-3.6, .2, 4].map((x, i) => <mesh key={x} position={[x, 1.9 + i * .15, .9]}>
       <planeGeometry args={[i === 1 ? 1.2 : .7, 4 + i * .3, 2, 12]} />
-      <shaderMaterial transparent depthWrite={false} side={THREE.DoubleSide} uniforms={uniforms} vertexShader="varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}" fragmentShader="varying vec2 vUv;uniform float uTime;void main(){float a=sin(vUv.x*91.+sin(vUv.y*18.+uTime*1.8)*2.)*.14+.42;float edge=smoothstep(0.,.12,vUv.x)*smoothstep(0.,.12,1.-vUv.x);float flow=.7+.3*sin(vUv.y*39.+uTime*3.);float mist=smoothstep(.35,0.,vUv.y);gl_FragColor=vec4(vec3(.65,.73,.77)+mist*.1,edge*(a*flow+mist*.15));}" />
+      <shaderMaterial transparent depthWrite={false} side={THREE.DoubleSide} uniforms={uniforms} vertexShader="varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}" fragmentShader={`
+        varying vec2 vUv; uniform float uTime;
+        float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+        float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.,1.)),f.x),f.y);}
+        void main(){
+          float flow=noise(vec2(vUv.x*28.,vUv.y*4.+uTime*1.8));
+          float fine=noise(vec2(vUv.x*85.,vUv.y*8.+uTime*3.));
+          float edge=smoothstep(0.,.15,vUv.x)*smoothstep(0.,.15,1.-vUv.x);
+          float fade=smoothstep(0.,.12,vUv.y);
+          float crest=smoothstep(.88,1.,vUv.y);
+          vec3 water=mix(vec3(.48,.57,.63),vec3(.86,.89,.88),crest);
+          gl_FragColor=vec4(water,edge*fade*(.26+flow*.3+fine*.08));
+        }
+      `} />
     </mesh>)}
+    {[-3.6, .2, 4].map(x => <mesh key={`mist-${x}`} position={[x, .1, 1.1]}><planeGeometry args={[2.6, 1.6]} /><shaderMaterial transparent depthWrite={false} uniforms={uniforms} vertexShader="varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}" fragmentShader="varying vec2 vUv;uniform float uTime;void main(){vec2 p=(vUv-.5)*vec2(1.,1.4);float a=exp(-dot(p,p)*14.)*(.25+.05*sin(vUv.x*17.+uTime));gl_FragColor=vec4(.58,.65,.68,a);}" /></mesh>)}
     {[-2.7, 0, 2.7].map((x, i) => <group key={x} position={[x, 5.5 + i * .15, 1.6]} rotation={[0, -.12 + i * .12, 0]}>
       <mesh><boxGeometry args={[1.75, 2.25, .24]} /><meshStandardMaterial color="#17242c" metalness={.22} roughness={.7} /></mesh>
       <mesh position={[0, 0, .13]}><planeGeometry args={[1.52, 2]} /><meshStandardMaterial color={['#667982', '#6a7167', '#6a6054'][i]} emissive="#53636b" emissiveIntensity={.18} roughness={.8} /></mesh>

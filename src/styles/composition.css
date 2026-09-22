@@ -7,7 +7,9 @@
 .mk-menu-trigger { border: 1px solid var(--mk-line-dim); padding: 0 18px; min-height: 34px; font-size: 10px; }
 .mk-menu-glyph i { background: var(--mk-ink-primary); }
 .mk-topbar.is-scrolled { background: rgba(7,16,24,.56); }
-.mk-chapter-rail { left: 28px; top: 10.8vh; z-index: 40; }
+.mk-chapter-rail { left: 28px; top: 10.1vh; z-index: 40; }
+.mk-chapter-rail li.is-active button { transform: none; }
+.mk-chapter-rail button { gap: 22px; }
 .mk-chapter-rail ol { gap: clamp(6px, 1.4vh, 15px); }
 .mk-chapter-rail__copy b { font-size: 14px; color: inherit; }
 .mk-chapter-rail__progress { display: none; }

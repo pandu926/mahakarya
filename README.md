@@ -100,6 +100,18 @@ The experience supports `high`, `medium`, and `low` tiers based on viewport and 
 
 Passing type checks and browser checks does not establish pixel identity with the supplied concept artwork. Procedural geometry, material detail, cloud depth, and reflections still differ from that artwork. Coverage thresholds currently apply to the utility/store scope configured in `vite.config.ts`, not the complete WebGL scene; browser screenshots are the visual-review evidence.
 
+### Supporting sky asset
+
+`public/assets/images/environment/cloud-panorama.webp` was generated using the built-in image generation tool, as a supporting sky texture only, then encoded as WebP. All six landmarks remain procedural geometry. If the texture fails to load, the procedural sky remains in place. Generation prompt:
+
+> Use case: stylized-concept. Asset type: BACKGROUND SKY TEXTURE ONLY for a cinematic Three.js architectural world, not a website screenshot. Create a very wide 3:1 panorama of monumental softly billowing volumetric cloud banks in a dark steel-blue twilight sky. Upper 35 percent quiet deep navy #071018 fading to muted steel blue, lower half layered pale blue-gray vapor and dense low fog, selectively backlit with subtle warm ivory rims from the upper right. Sophisticated photorealistic atmospheric depth, film VFX matte painting quality, restrained saturation, detailed natural cloud microstructure, softly luminous silver highlights, deep shadows, large negative spaces, no psychedelic patterns. Flat background plate viewed toward distant horizon. CLOUDS AND SKY ONLY: absolutely no ground, mountains, rocks, buildings, portals, trees, rings, people, sun disc, stars, typography, graphics, interface, logos, watermarks, or frames. This supporting texture will sit BEHIND real 3D procedural landmarks; do not depict any landmarks.
+
+To refresh the six chapter preview images, run `npm run build && node scripts/capture-chapters.mjs`, then rebuild to include the refreshed images. Captures use a production preview server and are written only after all six scenes pass readiness/error checks. High-tier Prelude uses a local low-resolution floor reflector; other chapters/devices keep the inexpensive stone floor.
+
+`public/assets/images/environment/basalt.webp` is a second built-in-generated supporting texture, shared across stone materials using triplanar projection. Generation prompt:
+
+> Use case: stylized-concept. Asset type: seamless tileable PBR base-color texture for procedural basalt rock meshes, NOT a picture of a rock object. Create a square orthographic flat surface scan of dark weathered blue-charcoal basalt: layered mineral striations, fine irregular fractures, tiny chipped slate facets, restrained cool gray mineral variation, occasional subtle pale stone seams. Dense microstructure like cinematic monumental volcanic cliffs. Even diffuse lighting, NO directional shadows, NO specular glints, NO ambient scene, NO perspective, NO objects, NO border, NO text. Seamless on all four edges, low-contrast mid-dark charcoal slate palette, not black, not brown, no gold, no vegetation. This is an albedo material map applied to existing real 3D geometry.
+
 ## Accessibility behavior
 
 - Story copy and controls are semantic DOM; the canvas is `aria-hidden`.

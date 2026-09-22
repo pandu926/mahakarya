@@ -24,6 +24,10 @@ export function CraftWorld({ chapter, position, reducedMotion = false }: Chapter
   const box = useMemo(() => new THREE.BoxGeometry(1, 1, 1), [])
   const modules = useMemo(() => Array.from({ length: 4 }, (_, i) => moduleBeams(i)), [])
   const panels = useMemo<InstanceSpec[]>(() => Array.from({ length: 28 }, (_, i) => ({ position: [-2 + (i % 7) * .72, 1.8 + Math.floor(i / 7) * 1.2, i % 3 === 0 ? 1.24 : -.5], scale: [.65, 1.05, .035], color: i % 5 === 0 ? '#c4a275' : ['#242c32', '#344149', '#1c272e'][i % 3] })), [])
+  const windows = useMemo<InstanceSpec[]>(() => Array.from({ length: 48 }, (_, i) => ({
+    position: [-2 + i % 6 * .8, 1.75 + Math.floor(i / 12) * 1.2, i % 12 < 6 ? 1.16 : -1.16],
+    scale: [.68, .7, .025], color: i % 5 === 0 ? '#ffe2b0' : i % 3 === 0 ? '#785b36' : '#233038',
+  })), [])
   const ribbon = useMemo(() => new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(-3, 1, 1.5), new THREE.Vector3(-4, 2, 0), new THREE.Vector3(-2, 5.5, -1), new THREE.Vector3(2, 6.8, -.3), new THREE.Vector3(3.3, 4.5, 1.2)]), 80, .028, 6), [])
   useEffect(() => () => { box.dispose(); ribbon.dispose() }, [box, ribbon])
   useFrame(() => {
@@ -36,10 +40,11 @@ export function CraftWorld({ chapter, position, reducedMotion = false }: Chapter
       group.rotation.z = (i % 2 ? -1 : 1) * offset * .2
     })
   })
-  return <group position={[...position]} rotation={[0, -.24, 0]} name="CraftArchitecture">
+  return <group position={[...position]} rotation={[0, -.58, 0]} name="CraftArchitecture">
     {modules.map((items, i) => <group key={i} ref={node => { groups.current[i] = node }}><Instances geometry={box} items={items} color="#7b7770" metalness={.55} roughness={.48} /></group>)}
     <Instances geometry={box} items={panels} metalness={.32} roughness={.64} />
-    <mesh geometry={box} position={[0, 3.5, -.3]} scale={[2, 2.8, 1.5]}><meshStandardMaterial color="#d4b386" emissive="#e7b86b" emissiveIntensity={.42} roughness={.48} /></mesh>
+    <Instances geometry={box} items={windows} emissive="#dfb06e" metalness={.45} roughness={.3} />
+    {[0, 1, 2, 3].map(i => <mesh key={i} geometry={box} position={[i % 2 ? .3 : -.2, 1.6 + i * 1.2, 0]} scale={[i % 2 ? 5 : 4.2, .12, 2.8]}><meshStandardMaterial color="#a38e72" emissive="#e7b86b" emissiveIntensity={.08} roughness={.5} metalness={.35} /></mesh>)}
     <mesh geometry={ribbon}><meshStandardMaterial color="#ae946c" emissive="#a87936" emissiveIntensity={.35} metalness={.65} roughness={.4} /></mesh>
     <mesh position={[0, .5, 0]}><boxGeometry args={[6.1, .16, 4]} /><meshStandardMaterial color="#252f36" roughness={.9} /></mesh>
   </group>

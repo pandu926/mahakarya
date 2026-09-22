@@ -20,8 +20,8 @@ function treeGeometry() {
     if (depth === 0) { tips.push(end); return }
     for (let i = 0; i < 3; i++) {
       const angle = i * Math.PI * 2 / 3 + random()
-      const next = new THREE.Vector3(Math.cos(angle) * .7, .55 + random() * .35, Math.sin(angle) * .7).addScaledVector(direction, .45).normalize()
-      branch(end, next, length * .62, radius * .53, depth - 1)
+      const next = new THREE.Vector3(Math.cos(angle), .28 + random() * .3, Math.sin(angle)).addScaledVector(direction, .25).normalize()
+      branch(end, next, length * .73, radius * .53, depth - 1)
     }
   }
   branch(new THREE.Vector3(), new THREE.Vector3(.12, 1, .05).normalize(), 1.5, .2, 3)
@@ -45,7 +45,7 @@ export function OriginsWorld({ chapter, position, qualityTier, reducedMotion = f
     return geometry
   }, [])
   const tree = useMemo(treeGeometry, [])
-  const canopy = useMemo<InstanceSpec[]>(() => tree.tips.filter((_, i) => i % 2 === 0).map((tip, i) => ({ position: tip.toArray() as [number, number, number], scale: [.48 + i % 2 * .12, .42 + i % 3 * .09, .5], color: ['#777668', '#8e8775', '#646e60'][i % 3] })), [tree])
+  const canopy = useMemo<InstanceSpec[]>(() => tree.tips.filter((_, i) => i % 2 === 0).slice(0, 12).map((tip, i) => ({ position: tip.toArray() as [number, number, number], scale: [.66 + i % 2 * .12, .3 + i % 3 * .06, .65], color: ['#777668', '#8e8775', '#646e60'][i % 3] })), [tree])
   const fragments = useMemo<InstanceSpec[]>(() => {
     const random = createSeededRandom(2204)
     return Array.from({ length: qualityTier === 'low' ? 8 : 16 }, (_, i) => {
@@ -61,11 +61,11 @@ export function OriginsWorld({ chapter, position, qualityTier, reducedMotion = f
   })
   return <group position={[...position]} name="OriginsFloatingIsland">
     <group ref={root}>
-      <mesh geometry={island} position={[0, 2.1, 0]} scale={[2.8, 1.7, 2]}><StoneMaterial color="#596168" roughness={.94} /></mesh>
+      <mesh geometry={island} position={[0, 2.1, 0]} scale={[2.8, 2.5, 2]}><StoneMaterial color="#596168" roughness={.94} /></mesh>
       <mesh geometry={island} position={[0, 2.95, 0]} scale={[2.65, .15, 1.9]}><StoneMaterial color="#656357" roughness={.98} /></mesh>
       <group position={[0, 3.1, 0]}>
         <mesh geometry={tree.geometry}><meshStandardMaterial color="#514537" roughness={.94} /></mesh>
-        <Instances geometry={rock} items={canopy} />
+        <Instances geometry={rock} items={canopy} stone />
       </group>
     </group>
     <Instances geometry={rock} items={fragments} color="#49545b" />

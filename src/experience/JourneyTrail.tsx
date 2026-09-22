@@ -20,7 +20,7 @@ const TRAIL_FRAGMENT = `
     float reveal = .2 + .8 * (1.0 - smoothstep(uProgress + .08, uProgress + .12, vAlong));
     float leading = 1.0 + 0.55 * exp(-abs(vAlong - uProgress) * 80.0);
     float pulse = 0.9 + 0.1 * sin(uTime * 2.0 + vAlong * 18.0);
-    gl_FragColor = vec4(1.0, 0.82, 0.52, reveal * uOpacity * leading * pulse);
+    gl_FragColor = vec4(2.4, 1.65, .78, reveal * uOpacity * leading * pulse);
   }
 `
 
@@ -33,8 +33,8 @@ export function JourneyTrail({ reducedMotion = false }: { reducedMotion?: boolea
     'catmullrom',
     0.42,
   ), [])
-  const geometry = useMemo(() => new THREE.TubeGeometry(curve, 220, 0.038, 6, false), [curve])
-  const haloGeometry = useMemo(() => new THREE.TubeGeometry(curve, 220, 0.16, 6, false), [curve])
+  const geometry = useMemo(() => new THREE.TubeGeometry(curve, 720, 0.032, 6, false), [curve])
+  const haloGeometry = useMemo(() => new THREE.TubeGeometry(curve, 720, 0.10, 6, false), [curve])
   const uniforms = useMemo(() => ({
     uProgress: { value: 0 },
     uTime: { value: 0 },
@@ -51,7 +51,7 @@ export function JourneyTrail({ reducedMotion = false }: { reducedMotion?: boolea
     uniforms.uProgress.value = journeyRuntime.progress
     uniforms.uTime.value = time
     if (core.current) core.current.uniforms.uOpacity.value = 0.72 + (journeyRuntime.velocity === 0 ? 0 : Math.min(Math.abs(journeyRuntime.velocity) * 0.16, 0.18))
-    if (halo.current) halo.current.uniforms.uOpacity.value = 0.22 + Math.min(Math.abs(journeyRuntime.velocity) * 0.05, 0.08)
+    if (halo.current) halo.current.uniforms.uOpacity.value = 0.08 + Math.min(Math.abs(journeyRuntime.velocity) * 0.025, 0.04)
   })
 
   return (

@@ -9,6 +9,9 @@ import type { ChapterConfig, QualityTier } from './types'
 import { CHAPTER_POSITIONS, chapterConfigs } from '../chapters/config'
 import { PreludeWorld, OriginsWorld, CraftWorld, ImpactWorld, ProcessWorld, FutureWorld } from '../chapters'
 import { COLORS } from '../chapters/shared'
+import { ReflectiveFloor } from './ReflectiveFloor'
+import { EnvironmentLight } from './EnvironmentLight'
+import { StoneTextureProvider } from '../chapters/StoneTexture'
 
 const WORLD_LIGHT_POSITIONS: readonly [number, number, number][] = [
   [0, 5.2, 3.8], [22, 5.4, 3.2], [44, 5.2, 3.6], [68, 5.2, 3.4], [92, 5.2, 3.6], [118, 5.8, 2.8],
@@ -18,7 +21,7 @@ function WorldLighting({ chapters, qualityTier }: { chapters: readonly ChapterCo
   const warm = useRef<THREE.PointLight>(null)
   const key = useRef<THREE.DirectionalLight>(null)
   const { gl } = useThree()
-  const keyIntensity = 3.2
+  const keyIntensity = 2.6
 
   useFrame(() => {
     const progress = journeyRuntime.progress
@@ -39,7 +42,7 @@ function WorldLighting({ chapters, qualityTier }: { chapters: readonly ChapterCo
 
   return (
     <>
-      <hemisphereLight args={['#b7d5ea', '#293039', 1.65]} />
+      <hemisphereLight args={['#b7d5ea', '#172028', .5]} />
       <directionalLight ref={key} color="#adc0bf" position={[-12, 18, 12]} castShadow={qualityTier === 'high'} shadow-mapSize={[qualityTier === 'high' ? 1024 : 512, qualityTier === 'high' ? 1024 : 512]} />
       <pointLight ref={warm} color="#ffe0b0" intensity={22} distance={24} decay={2} position={WORLD_LIGHT_POSITIONS[0]} />
     </>
@@ -67,9 +70,11 @@ export function World({ chapters = chapterConfigs, qualityTier, reducedMotion = 
   ], [chapters])
 
   return (
-    <>
+    <StoneTextureProvider>
       <fogExp2 attach="fog" args={[COLORS.night, qualityTier === 'low' ? 0.018 : qualityTier === 'medium' ? 0.014 : 0.011]} />
       <WorldGround />
+      <EnvironmentLight />
+      <ReflectiveFloor qualityTier={qualityTier} />
       <JourneyTrail reducedMotion={reducedMotion} />
       <PreludeWorld chapter={chapterList[0]} position={CHAPTER_POSITIONS[0]} qualityTier={qualityTier} reducedMotion={reducedMotion} />
       <OriginsWorld chapter={chapterList[1]} position={CHAPTER_POSITIONS[1]} qualityTier={qualityTier} reducedMotion={reducedMotion} />
@@ -80,7 +85,7 @@ export function World({ chapters = chapterConfigs, qualityTier, reducedMotion = 
       <Atmosphere qualityTier={qualityTier} reducedMotion={reducedMotion} />
       <WorldLighting chapters={chapterList} qualityTier={qualityTier} />
       <CameraRig reducedMotion={reducedMotion} />
-    </>
+    </StoneTextureProvider>
   )
 }
 
