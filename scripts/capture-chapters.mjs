@@ -19,6 +19,7 @@ try {
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()) })
   await page.goto(server.resolvedUrls.local[0] + '?debug=1')
   await page.locator('.mk-loader').waitFor({ state: 'hidden' })
+  await page.waitForFunction(() => Number(document.querySelector('canvas')?.dataset.triangles) > 1000)
   assert.equal(await page.locator('canvas').getAttribute('data-world-valid'), 'true')
   assert.equal(await page.locator('canvas').getAttribute('data-landmark-count'), '6')
   await page.addStyleTag({ content: '.mk-content,.mk-topbar,.mk-chapter-rail,.mk-current-chapter,.mk-cursor,.mk-atmosphere { visibility:hidden!important; }' })
