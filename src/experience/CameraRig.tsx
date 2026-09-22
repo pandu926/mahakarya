@@ -4,8 +4,10 @@ import * as THREE from 'three'
 import { journeyRuntime } from './runtime'
 
 const STOPS = [0, .0775, .2275, .3875, .5575, .73, .895, 1]
-const CAMERA_POINTS = [[7, 6.5, 28], [3, 6, 25], [15, 6.5, 22], [37, 6, 23], [61, 7, 25], [85, 5.8, 23], [111, 6.5, 25], [114, 7.3, 26]] as const
-const TARGET_POINTS = [[14, 4.5, 0], [5, 4.5, 0], [16, 3.3, 0], [38, 3.5, 0], [62, 3.7, 0], [86, 3.2, 0], [112, 3.8, 0], [114, 4.2, -1]] as const
+// Fixed 38° lens: dolly closer to each landmark, never pulse the field of view.
+// Paired knots keep the monument on the right of the stable editorial column.
+const CAMERA_POINTS = [[7, 6.5, 28], [3, 6, 25], [18, 4.8, 15], [39, 4.8, 15], [62, 5.6, 19], [88, 4.4, 16], [113, 5.4, 19], [115, 6.2, 20]] as const
+const TARGET_POINTS = [[14, 4.5, 0], [5, 4.5, 0], [17.6, 3.6, 0], [39.5, 3.6, 0], [62.5, 4.1, 0], [87.4, 3.7, 0], [112.6, 4.7, 0], [114.5, 5, -1]] as const
 
 function splinePosition(progress: number) {
   const i = Math.max(0, Math.min(STOPS.length - 2, STOPS.findIndex((p) => p > progress) - 1))
